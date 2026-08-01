@@ -1,7 +1,6 @@
 import { CircleQuestionMark, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import Image from "next/image";
-import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Sunbeam } from "@/components/ui/sunbeam";
+import { Author } from "../ui/author";
 
 type JoinRoomScreenProps = {
   name: string;
@@ -105,17 +105,7 @@ export function JoinRoomScreen({
           </Button>
         </div>
 
-        <span className="fixed text-xs bottom-2 text-white/50">
-          Feito por{" "}
-          <Link
-            href="https://linkedin.com/in/ViniciusDutt"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-bold underline"
-          >
-            Vinícius Dutra
-          </Link>
-        </span>
+        <Author />
       </motion.div>
 
       <Sunbeam />

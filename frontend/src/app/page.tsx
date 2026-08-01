@@ -3,9 +3,9 @@
 import { CircleQuestionMark, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Author } from "@/components/ui/author";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -247,17 +247,7 @@ export default function Home() {
           </Button>
         </div>
 
-        <span className="fixed text-xs bottom-2 text-white/50">
-          Feito por{" "}
-          <Link
-            href="https://linkedin.com/in/ViniciusDutt"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-bold underline"
-          >
-            Vinícius Dutra
-          </Link>
-        </span>
+        <Author />
       </motion.div>
 
       <Sunbeam />
