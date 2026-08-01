@@ -15,6 +15,8 @@ import { RematchDto } from "src/game/dto/rematch.dto";
 import { CorrectWordDto } from "../game/dto/correct-word.dto";
 import { SkipWordDto } from "../game/dto/skip-word.dto";
 import { StartTurnDto } from "../game/dto/start-turn.dto";
+import { SubmitClueDto } from "../game/dto/submit-clue.dto";
+import { SubmitGuessDto } from "../game/dto/submit-guess.dto";
 import { GameService } from "../game/game.service";
 import { CreateRoomDto } from "./dto/create-room.dto";
 import { JoinRoomDto } from "./dto/join-room.dto";
@@ -330,6 +332,59 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     } finally {
       this.startingRooms.delete(room.id);
     }
+  }
+
+  @SubscribeMessage("game:submit-clue")
+  handleSubmitClue(@MessageBody() data: SubmitClueDto, @ConnectedSocket() client: Socket) {
+    const { room, player } = this.findPlayerInRoom(data.roomId, client.id);
+
+    const result = this.gameService.submitClue({
+      roomId: room.id,
+      playerId: player.id,
+      clue: data.clue,
+    });
+
+    this.server.to(room.id).emit("game:updated", result.publicGame);
+
+    return {
+      success: true,
+      data: {
+        game: result.publicGame,
+      },
+    };
+  }
+
+  @SubscribeMessage("game:submit-guess")
+  handleSubmitGuess(@MessageBody() data: SubmitGuessDto, @ConnectedSocket() client: Socket) {
+    const { room, player } = this.findPlayerInRoom(data.roomId, client.id);
+
+    const result = this.gameService.submitGuess({
+      roomId: room.id,
+      playerId: player.id,
+      guess: data.guess,
+    });
+
+    this.server.to(room.id).emit("game:updated", result.publicGame);
+
+    if (result.word) {
+      const activeRoles =
+        result.game.activeTeam === Team.TEAM_1 ? result.game.roles.team1 : result.game.roles.team2;
+
+      this.emitWordToAllowedPlayers(
+        room.id,
+        result.game.activeTeam,
+        activeRoles.clueGiverId,
+        result.word,
+      );
+    }
+
+    return {
+      success: true,
+      data: {
+        game: result.publicGame,
+        isCorrect: result.isCorrect,
+      },
+    };
   }
 
   @SubscribeMessage("room:reconnect")

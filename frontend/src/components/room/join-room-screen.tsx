@@ -45,7 +45,7 @@ export function JoinRoomScreen({
           src="/logo.svg"
           alt="A Senha Logo"
           width={256}
-          height={56}
+          height={80}
         />
 
         <Dialog>

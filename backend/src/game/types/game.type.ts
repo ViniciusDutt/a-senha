@@ -7,8 +7,14 @@ export type TeamScore = {
   team2: number;
 };
 
+export type TurnInputPhase = "waiting_clue" | "waiting_guess";
+
+export type GuessResult = "correct" | "wrong" | null;
+
 export type Game = {
   roomId: string;
+
+  inputModeEnabled: boolean;
 
   round: number;
   totalRounds: number;
@@ -29,6 +35,11 @@ export type Game = {
 
   currentWord: string | null;
   usedWords: string[];
+
+  turnInputPhase: TurnInputPhase;
+  currentClue: string | null;
+  lastGuess: string | null;
+  lastGuessResult: GuessResult;
 
   turnsPlayedInRound: Team[];
 

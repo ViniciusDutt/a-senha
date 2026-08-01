@@ -49,6 +49,29 @@ type ReconnectGameParams = {
   player: Player;
 };
 
+type SubmitClueParams = {
+  roomId: string;
+  playerId: string;
+  clue: string;
+};
+
+type SubmitClueResult = {
+  publicGame: PublicGame;
+};
+
+type SubmitGuessParams = {
+  roomId: string;
+  playerId: string;
+  guess: string;
+};
+
+type SubmitGuessResult = {
+  game: Game;
+  publicGame: PublicGame;
+  isCorrect: boolean;
+  word: string | null;
+};
+
 @Injectable()
 export class GameService {
   private readonly games = new Map<string, Game>();
@@ -72,6 +95,12 @@ export class GameService {
 
     const game: Game = {
       roomId: room.id,
+      inputModeEnabled: room.settings.chatEnabled,
+
+      turnInputPhase: "waiting_clue",
+      currentClue: null,
+      lastGuess: null,
+      lastGuessResult: null,
 
       round: 1,
       totalRounds: 5,
@@ -136,10 +165,10 @@ export class GameService {
     const endsAt = new Date(startedAt.getTime() + 30_000);
 
     game.phase = GamePhase.PLAYING;
-    game.currentWord = word;
-    game.usedWords.push(word);
     game.turnStartedAt = startedAt;
     game.turnEndsAt = endsAt;
+
+    this.resetTurnInteraction(game);
 
     return {
       game,
@@ -165,6 +194,8 @@ export class GameService {
     game.currentWord = null;
     game.turnStartedAt = null;
     game.turnEndsAt = null;
+
+    this.resetTurnInteraction(game);
 
     if (!game.turnsPlayedInRound.includes(game.activeTeam)) {
       game.turnsPlayedInRound.push(game.activeTeam);
@@ -252,7 +283,87 @@ export class GameService {
     game.turnStartedAt = null;
     game.turnEndsAt = null;
 
+    this.resetTurnInteraction(game);
+
     return this.toPublicGame(game);
+  }
+
+  submitClue({ roomId, playerId, clue }: SubmitClueParams): SubmitClueResult {
+    const game = this.getInputModeGame(roomId);
+
+    if (game.turnInputPhase !== "waiting_clue") {
+      throw new WsException("Não é possível enviar uma dica neste momento.");
+    }
+
+    const activeRoles = game.activeTeam === Team.TEAM_1 ? game.roles.team1 : game.roles.team2;
+
+    if (playerId !== activeRoles.clueGiverId) {
+      throw new WsException("Apenas o jogador responsável pelas dicas pode enviar uma dica.");
+    }
+
+    const normalizedClue = this.validateSingleWord(clue, "dica");
+
+    if (
+      game.currentWord &&
+      this.normalizeWord(normalizedClue) === this.normalizeWord(game.currentWord)
+    ) {
+      throw new WsException("A dica não pode ser igual à senha.");
+    }
+
+    game.currentClue = normalizedClue;
+    game.lastGuess = null;
+    game.lastGuessResult = null;
+    game.turnInputPhase = "waiting_guess";
+
+    return {
+      publicGame: this.toPublicGame(game),
+    };
+  }
+
+  submitGuess({ roomId, playerId, guess }: SubmitGuessParams): SubmitGuessResult {
+    const game = this.getInputModeGame(roomId);
+
+    if (game.turnInputPhase !== "waiting_guess") {
+      throw new WsException("Não é possível enviar um palpite neste momento.");
+    }
+
+    const activeRoles = game.activeTeam === Team.TEAM_1 ? game.roles.team1 : game.roles.team2;
+
+    if (playerId !== activeRoles.guesserId) {
+      throw new WsException("Apenas o jogador responsável pelo palpite pode responder.");
+    }
+
+    const normalizedGuess = this.validateSingleWord(guess, "palpite");
+
+    if (!game.currentWord) {
+      throw new WsException("A senha atual não foi encontrada.");
+    }
+
+    const isCorrect = this.normalizeWord(normalizedGuess) === this.normalizeWord(game.currentWord);
+
+    game.lastGuess = normalizedGuess;
+    game.lastGuessResult = isCorrect ? "correct" : "wrong";
+
+    game.turnInputPhase = "waiting_clue";
+
+    let word: string | null = null;
+
+    if (isCorrect) {
+      if (game.activeTeam === Team.TEAM_1) {
+        game.turnScores.team1 += 1;
+      } else {
+        game.turnScores.team2 += 1;
+      }
+
+      word = this.selectNextWord(game);
+    }
+
+    return {
+      game,
+      publicGame: this.toPublicGame(game),
+      isCorrect,
+      word,
+    };
   }
 
   advanceRound(roomId: string): PublicGame {
@@ -288,11 +399,17 @@ export class GameService {
     game.turnStartedAt = null;
     game.turnEndsAt = null;
 
+    this.resetTurnInteraction(game);
+
     return this.toPublicGame(game);
   }
 
   correctWord({ roomId, playerId }: ChangeWordParams): ChangeWordResult {
     const game = this.getPlayingGame(roomId, playerId);
+
+    if (game.inputModeEnabled) {
+      throw new WsException("No modo por texto, o acerto é validado automaticamente.");
+    }
 
     if (game.activeTeam === Team.TEAM_1) {
       game.turnScores.team1 += 1;
@@ -301,6 +418,8 @@ export class GameService {
     }
 
     const word = this.selectNextWord(game);
+
+    this.resetTurnInteraction(game);
 
     return {
       game,
@@ -313,6 +432,8 @@ export class GameService {
     const game = this.getPlayingGame(roomId, playerId);
 
     const word = this.selectNextWord(game);
+
+    this.resetTurnInteraction(game);
 
     return {
       game,
@@ -338,19 +459,86 @@ export class GameService {
   toPublicGame(game: Game): PublicGame {
     return {
       roomId: game.roomId,
+
+      inputModeEnabled: game.inputModeEnabled,
+
       round: game.round,
       totalRounds: game.totalRounds,
+
       activeTeam: game.activeTeam,
       phase: game.phase,
+
       roles: game.roles,
+
       turnScores: game.turnScores,
       roundsWon: game.roundsWon,
+
       roundWinner: game.roundWinner,
       winner: game.winner,
+
+      turnInputPhase: game.turnInputPhase,
+      currentClue: game.currentClue,
+      lastGuess: game.lastGuess,
+      lastGuessResult: game.lastGuessResult,
+
       turnStartedAt: game.turnStartedAt,
       turnEndsAt: game.turnEndsAt,
+
       createdAt: game.createdAt,
     };
+  }
+
+  private getInputModeGame(roomId: string): Game {
+    const game = this.games.get(roomId.toUpperCase());
+
+    if (!game) {
+      throw new WsException("Partida não encontrada.");
+    }
+
+    if (game.phase !== GamePhase.PLAYING) {
+      throw new WsException("O turno não está em andamento.");
+    }
+
+    if (!game.inputModeEnabled) {
+      throw new WsException("O modo por texto não está ativo nesta partida.");
+    }
+
+    return game;
+  }
+
+  private validateSingleWord(value: string, fieldName: "dica" | "palpite"): string {
+    const normalizedValue = value.trim();
+
+    if (!normalizedValue) {
+      throw new WsException(`Digite ${fieldName === "dica" ? "uma dica" : "um palpite"}.`);
+    }
+
+    const words = normalizedValue.split(/\s+/);
+
+    if (words.length !== 1) {
+      throw new WsException(`O ${fieldName} deve conter apenas uma palavra.`);
+    }
+
+    if (normalizedValue.length > 30) {
+      throw new WsException(`O ${fieldName} deve ter no máximo 30 caracteres.`);
+    }
+
+    return normalizedValue;
+  }
+
+  private normalizeWord(value: string): string {
+    return value
+      .trim()
+      .toLocaleLowerCase("pt-BR")
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
+  }
+
+  private resetTurnInteraction(game: Game): void {
+    game.turnInputPhase = "waiting_clue";
+    game.currentClue = null;
+    game.lastGuess = null;
+    game.lastGuessResult = null;
   }
 
   private hasGameWinner(game: Game): boolean {

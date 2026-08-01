@@ -2,9 +2,11 @@
 
 import { Loader2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
+import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Sunbeam } from "@/components/ui/sunbeam";
 import { socket } from "@/lib/socket";
 import type {
@@ -14,6 +16,8 @@ import type {
   ReconnectGameResponse,
   RematchResponse,
   StartTurnResponse,
+  SubmitClueResponse,
+  SubmitGuessResponse,
 } from "@/types/game";
 import type { Player, Room, Team } from "@/types/room";
 
@@ -30,6 +34,11 @@ export default function GamePage() {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isReturningToLobby, setIsReturningToLobby] = useState(false);
+  const [clueInput, setClueInput] = useState("");
+  const [guessInput, setGuessInput] = useState("");
+  const [isSubmittingClue, setIsSubmittingClue] = useState(false);
+  const [isSubmittingGuess, setIsSubmittingGuess] = useState(false);
+  const [inputError, setInputError] = useState<string | null>(null);
 
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem(`room:${roomId}:playerId`);
@@ -65,6 +74,11 @@ export default function GamePage() {
       setCurrentWord(null);
       setIsStartingTurn(false);
       setIsChangingWord(false);
+      setClueInput("");
+      setGuessInput("");
+      setInputError(null);
+      setIsSubmittingClue(false);
+      setIsSubmittingGuess(false);
     }
 
     function handleGameUpdated(updatedGame: Game) {
@@ -190,6 +204,142 @@ export default function GamePage() {
       window.clearInterval(interval);
     };
   }, [game?.phase, game?.turnEndsAt]);
+
+  useEffect(() => {
+    setInputError(null);
+
+    if (game?.turnInputPhase === "waiting_clue") {
+      setGuessInput("");
+    }
+
+    if (game?.turnInputPhase === "waiting_guess") {
+      setClueInput("");
+    }
+  }, [game?.turnInputPhase]);
+
+  function validateSingleWord(value: string): string | null {
+    const normalizedValue = value.trim();
+
+    if (!normalizedValue) {
+      return "Digite uma palavra.";
+    }
+
+    if (normalizedValue.split(/\s+/).length !== 1) {
+      return "Digite apenas uma palavra.";
+    }
+
+    if (normalizedValue.length > 30) {
+      return "A palavra deve ter no máximo 30 caracteres.";
+    }
+
+    return null;
+  }
+
+  function handleSubmitClue() {
+    if (
+      !socket.connected ||
+      !game?.inputModeEnabled ||
+      game.phase !== "playing" ||
+      game.turnInputPhase !== "waiting_clue" ||
+      !isClueGiver ||
+      isSubmittingClue
+    ) {
+      return;
+    }
+
+    const normalizedClue = clueInput.trim();
+    const validationError = validateSingleWord(normalizedClue);
+
+    if (validationError) {
+      setInputError(validationError);
+      return;
+    }
+
+    setInputError(null);
+    setIsSubmittingClue(true);
+
+    socket.emit(
+      "game:submit-clue",
+      {
+        roomId,
+        clue: normalizedClue,
+      },
+      (response: SubmitClueResponse) => {
+        setIsSubmittingClue(false);
+
+        if (!response.success) {
+          setInputError(response.message);
+          return;
+        }
+
+        setClueInput("");
+        setGame(response.data.game);
+
+        sessionStorage.setItem(
+          `room:${roomId}:game`,
+          JSON.stringify(response.data.game),
+        );
+      },
+    );
+  }
+
+  function handleSubmitGuess() {
+    if (
+      !socket.connected ||
+      !game?.inputModeEnabled ||
+      game.phase !== "playing" ||
+      game.turnInputPhase !== "waiting_guess" ||
+      !isGuesser ||
+      isSubmittingGuess
+    ) {
+      return;
+    }
+
+    const normalizedGuess = guessInput.trim();
+    const validationError = validateSingleWord(normalizedGuess);
+
+    if (validationError) {
+      setInputError(validationError);
+      return;
+    }
+
+    setInputError(null);
+    setIsSubmittingGuess(true);
+
+    socket.emit(
+      "game:submit-guess",
+      {
+        roomId,
+        guess: normalizedGuess,
+      },
+      (response: SubmitGuessResponse) => {
+        setIsSubmittingGuess(false);
+
+        if (!response.success) {
+          setInputError(response.message);
+          return;
+        }
+
+        setGuessInput("");
+        setGame(response.data.game);
+
+        sessionStorage.setItem(
+          `room:${roomId}:game`,
+          JSON.stringify(response.data.game),
+        );
+      },
+    );
+  }
+
+  function handleClueFormSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    handleSubmitClue();
+  }
+
+  function handleGuessFormSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    handleSubmitGuess();
+  }
 
   function handleRematch() {
     if (
@@ -392,39 +542,190 @@ export default function GamePage() {
                 <h2 className="mt-3 font-black text-5xl uppercase">
                   {currentWord ?? ""}
                 </h2>
-
-                {isClueGiver && (
-                  <div className="mt-8 grid grid-cols-2 gap-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      disabled={isChangingWord || !currentWord}
-                      onClick={handleSkipWord}
-                    >
-                      Pular
-                    </Button>
-
-                    <Button
-                      type="button"
-                      size="lg"
-                      disabled={isChangingWord || !currentWord}
-                      onClick={handleCorrectWord}
-                    >
-                      Acertou
-                    </Button>
-                  </div>
-                )}
               </>
-            ) : isGuesser ? (
+            ) : (
               <>
                 <p className="text-sm text-white/60">
                   Seu parceiro já recebeu a senha
                 </p>
 
-                <h2 className="mt-3 font-bold text-3xl">Aguarde a dica</h2>
+                <h2 className="mt-3 font-bold text-3xl">
+                  {game.inputModeEnabled
+                    ? game.turnInputPhase === "waiting_clue"
+                      ? "Aguarde a dica"
+                      : "Envie seu palpite"
+                    : "Aguarde a dica"}
+                </h2>
               </>
-            ) : null}
+            )}
+
+            {game.inputModeEnabled && (
+              <div className="mt-6 space-y-3">
+                {game.currentClue && (
+                  <div className="rounded-xl bg-white/10 p-4">
+                    <p className="text-sm text-white/50">Dica</p>
+
+                    <p className="mt-1 font-bold text-2xl uppercase">
+                      {game.currentClue}
+                    </p>
+                  </div>
+                )}
+
+                {game.lastGuess && (
+                  <div className="rounded-xl bg-white/10 p-4">
+                    <p className="text-sm text-white/50">Palpite</p>
+
+                    <p className="mt-1 font-bold text-2xl uppercase">
+                      {game.lastGuess}
+                    </p>
+
+                    {game.lastGuessResult && (
+                      <p className="mt-2 font-semibold">
+                        {game.lastGuessResult === "correct"
+                          ? "Acertou!"
+                          : "Errou!"}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {game.inputModeEnabled &&
+              isClueGiver &&
+              game.turnInputPhase === "waiting_clue" && (
+                <form
+                  className="mt-6 space-y-3"
+                  onSubmit={handleClueFormSubmit}
+                >
+                  <p className="text-sm text-white/60">
+                    Digite uma dica de apenas uma palavra
+                  </p>
+
+                  <div className="flex gap-2">
+                    <Input
+                      value={clueInput}
+                      maxLength={30}
+                      autoComplete="off"
+                      autoFocus
+                      disabled={isSubmittingClue || isChangingWord}
+                      placeholder="Digite a dica"
+                      onChange={(event) => {
+                        setClueInput(event.target.value);
+                        setInputError(null);
+                      }}
+                    />
+
+                    <Button
+                      type="submit"
+                      disabled={
+                        isSubmittingClue ||
+                        isChangingWord ||
+                        clueInput.trim().length === 0
+                      }
+                    >
+                      {isSubmittingClue ? "Enviando..." : "Enviar"}
+                    </Button>
+                  </div>
+
+                  {inputError && (
+                    <p className="text-destructive text-sm">{inputError}</p>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isChangingWord || !currentWord}
+                    onClick={handleSkipWord}
+                  >
+                    {isChangingWord ? "Pulando..." : "Pular"}
+                  </Button>
+                </form>
+              )}
+
+            {game.inputModeEnabled &&
+              isClueGiver &&
+              game.turnInputPhase === "waiting_guess" && (
+                <p className="mt-6 text-white/60">
+                  Aguardando o palpite de {guesser?.name ?? "seu parceiro"}...
+                </p>
+              )}
+
+            {game.inputModeEnabled &&
+              isGuesser &&
+              game.turnInputPhase === "waiting_guess" && (
+                <form
+                  className="mt-6 space-y-3"
+                  onSubmit={handleGuessFormSubmit}
+                >
+                  <p className="text-sm text-white/60">Qual é a senha?</p>
+
+                  <div className="flex gap-2">
+                    <Input
+                      value={guessInput}
+                      maxLength={30}
+                      autoComplete="off"
+                      autoFocus
+                      disabled={isSubmittingGuess}
+                      placeholder="Digite seu palpite"
+                      onChange={(event) => {
+                        setGuessInput(event.target.value);
+                        setInputError(null);
+                      }}
+                    />
+
+                    <Button
+                      type="submit"
+                      disabled={
+                        isSubmittingGuess || guessInput.trim().length === 0
+                      }
+                    >
+                      {isSubmittingGuess ? "Enviando..." : "Responder"}
+                    </Button>
+                  </div>
+
+                  {inputError && (
+                    <p className="text-destructive text-sm">{inputError}</p>
+                  )}
+                </form>
+              )}
+
+            {game.inputModeEnabled &&
+              isGuesser &&
+              game.turnInputPhase === "waiting_clue" && (
+                <p className="mt-6 text-white/60">
+                  Aguardando a dica de {clueGiver?.name ?? "seu parceiro"}...
+                </p>
+              )}
+
+            {game.inputModeEnabled && !isActiveTeam && (
+              <p className="mt-6 text-white/60">
+                Acompanhe as dicas e os palpites da dupla.
+              </p>
+            )}
+
+            {!game.inputModeEnabled && isClueGiver && (
+              <div className="mt-8 grid grid-cols-2 gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  disabled={isChangingWord || !currentWord}
+                  onClick={handleSkipWord}
+                >
+                  Pular
+                </Button>
+
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={isChangingWord || !currentWord}
+                  onClick={handleCorrectWord}
+                >
+                  Acertou
+                </Button>
+              </div>
+            )}
           </section>
         )}
 

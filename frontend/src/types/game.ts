@@ -17,8 +17,14 @@ export type TeamScore = {
   team2: number;
 };
 
+export type TurnInputPhase = "waiting_clue" | "waiting_guess";
+
+export type GuessResult = "correct" | "wrong" | null;
+
 export type Game = {
   roomId: string;
+
+  inputModeEnabled: boolean;
 
   round: number;
   totalRounds: number;
@@ -36,6 +42,11 @@ export type Game = {
 
   roundWinner: Team | null;
   winner: Team | null;
+
+  turnInputPhase: TurnInputPhase;
+  currentClue: string | null;
+  lastGuess: string | null;
+  lastGuessResult: GuessResult;
 
   turnStartedAt: string | null;
   turnEndsAt: string | null;
@@ -91,6 +102,31 @@ export type ReconnectGameResponse =
         room: Room;
         game: Game;
         word: string | null;
+      };
+    }
+  | {
+      success: false;
+      message: string;
+    };
+
+export type SubmitClueResponse =
+  | {
+      success: true;
+      data: {
+        game: Game;
+      };
+    }
+  | {
+      success: false;
+      message: string;
+    };
+
+export type SubmitGuessResponse =
+  | {
+      success: true;
+      data: {
+        game: Game;
+        isCorrect: boolean;
       };
     }
   | {
