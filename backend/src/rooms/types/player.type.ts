@@ -6,4 +6,5 @@ export type Player = {
   name: string;
   team: Team | null;
   isOwner: boolean;
+  isConnected: boolean;
 };
