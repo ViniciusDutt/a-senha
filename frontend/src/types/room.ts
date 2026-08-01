@@ -1,3 +1,5 @@
+import type { Game } from "./game";
+
 export type Team = "team1" | "team2";
 
 export type RoomStatus = "lobby" | "playing" | "finished";
@@ -78,6 +80,7 @@ export type StartRoomResponse =
       success: true;
       data: {
         room: Room;
+        game: Game;
       };
     }
   | {
@@ -86,6 +89,18 @@ export type StartRoomResponse =
     };
 
 export type UpdateRoomSettingsResponse =
+  | {
+      success: true;
+      data: {
+        room: Room;
+      };
+    }
+  | {
+      success: false;
+      message: string;
+    };
+
+export type UpdateTeamsResponse =
   | {
       success: true;
       data: {

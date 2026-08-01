@@ -52,7 +52,7 @@ type DisconnectedPlayerResult = {
   room: Room;
 };
 
-type StartRoomParams = {
+type RoomOwnerActionParams = {
   roomId: string;
   socketId: string;
 };
@@ -208,42 +208,48 @@ export class RoomsService {
     return room;
   }
 
-  startRoom({ roomId, socketId }: StartRoomParams): Room {
+  startRoom(params: RoomOwnerActionParams): Room {
+    const room = this.validateStartRoom(params);
+
+    room.status = RoomStatus.PLAYING;
+
+    return room;
+  }
+
+  returnToLobby({ roomId, socketId }: RoomOwnerActionParams): Room {
     const room = this.rooms.get(roomId.toUpperCase());
 
     if (!room) {
       throw new WsException("Sala não encontrada.");
     }
 
-    if (room.status !== RoomStatus.LOBBY) {
-      throw new WsException("A partida já foi iniciada.");
-    }
+    const player = room.players.find(currentPlayer => currentPlayer.socketId === socketId);
 
-    const owner = room.players.find(player => player.socketId === socketId);
-
-    if (!owner) {
+    if (!player) {
       throw new WsException("Jogador não encontrado na sala.");
     }
 
-    if (!owner.isOwner) {
-      throw new WsException("Apenas o dono pode iniciar a partida.");
+    if (!player.isOwner) {
+      throw new WsException("Apenas o dono pode iniciar uma nova partida.");
     }
 
-    const team1Players = room.players.filter(player => player.team === Team.TEAM_1);
-
-    const team2Players = room.players.filter(player => player.team === Team.TEAM_2);
-
-    if (team1Players.length !== 2 || team2Players.length !== 2) {
-      throw new WsException("Os dois times precisam ter exatamente dois jogadores.");
+    if (room.status !== RoomStatus.FINISHED) {
+      throw new WsException("A partida ainda não foi encerrada.");
     }
 
-    const hasDisconnectedPlayer = room.players.some(player => !player.isConnected);
+    room.status = RoomStatus.LOBBY;
 
-    if (hasDisconnectedPlayer) {
-      throw new WsException("Todos os jogadores precisam estar conectados.");
+    return room;
+  }
+
+  finishRoom(roomId: string): Room {
+    const room = this.rooms.get(roomId.toUpperCase());
+
+    if (!room) {
+      throw new WsException("Sala não encontrada.");
     }
 
-    room.status = RoomStatus.PLAYING;
+    room.status = RoomStatus.FINISHED;
 
     return room;
   }
@@ -318,6 +324,44 @@ export class RoomsService {
     return null;
   }
 
+  validateStartRoom({ roomId, socketId }: RoomOwnerActionParams): Room {
+    const room = this.rooms.get(roomId.toUpperCase());
+
+    if (!room) {
+      throw new WsException("Sala não encontrada.");
+    }
+
+    if (room.status !== RoomStatus.LOBBY) {
+      throw new WsException("A partida já foi iniciada.");
+    }
+
+    const owner = room.players.find(player => player.socketId === socketId);
+
+    if (!owner) {
+      throw new WsException("Jogador não encontrado na sala.");
+    }
+
+    if (!owner.isOwner) {
+      throw new WsException("Apenas o dono pode iniciar a partida.");
+    }
+
+    const team1Players = room.players.filter(player => player.team === Team.TEAM_1);
+
+    const team2Players = room.players.filter(player => player.team === Team.TEAM_2);
+
+    if (team1Players.length !== 2 || team2Players.length !== 2) {
+      throw new WsException("Os dois times precisam ter exatamente dois jogadores.");
+    }
+
+    const hasDisconnectedPlayer = room.players.some(player => !player.isConnected);
+
+    if (hasDisconnectedPlayer) {
+      throw new WsException("Todos os jogadores precisam estar conectados.");
+    }
+
+    return room;
+  }
+
   reconnectRoom({ roomId, playerId, socketId }: ReconnectRoomParams): ReconnectRoomResult {
     const room = this.rooms.get(roomId.toUpperCase());
 
@@ -338,6 +382,76 @@ export class RoomsService {
       playerId: player.id,
       room,
     };
+  }
+
+  resetTeams({ roomId, socketId }: RoomOwnerActionParams): Room {
+    const room = this.validateLobbyOwner({
+      roomId,
+      socketId,
+    });
+
+    for (const player of room.players) {
+      player.team = null;
+    }
+
+    return room;
+  }
+
+  randomizeTeams({ roomId, socketId }: RoomOwnerActionParams): Room {
+    const room = this.validateLobbyOwner({
+      roomId,
+      socketId,
+    });
+
+    if (room.players.length !== 4) {
+      throw new WsException("São necessários quatro jogadores para sortear os times.");
+    }
+
+    const shuffledPlayers = [...room.players];
+
+    for (let index = shuffledPlayers.length - 1; index > 0; index--) {
+      const randomIndex = randomInt(index + 1);
+
+      const currentPlayer = shuffledPlayers[index];
+      const randomPlayer = shuffledPlayers[randomIndex];
+
+      if (!currentPlayer || !randomPlayer) {
+        continue;
+      }
+
+      shuffledPlayers[index] = randomPlayer;
+      shuffledPlayers[randomIndex] = currentPlayer;
+    }
+
+    shuffledPlayers.forEach((player, index) => {
+      player.team = index < 2 ? Team.TEAM_1 : Team.TEAM_2;
+    });
+
+    return room;
+  }
+
+  private validateLobbyOwner({ roomId, socketId }: RoomOwnerActionParams): Room {
+    const room = this.rooms.get(roomId.toUpperCase());
+
+    if (!room) {
+      throw new WsException("Sala não encontrada.");
+    }
+
+    if (room.status !== RoomStatus.LOBBY) {
+      throw new WsException("Esta ação só pode ser realizada no lobby.");
+    }
+
+    const player = room.players.find(currentPlayer => currentPlayer.socketId === socketId);
+
+    if (!player) {
+      throw new WsException("Jogador não encontrado na sala.");
+    }
+
+    if (!player.isOwner) {
+      throw new WsException("Apenas o dono pode organizar os times.");
+    }
+
+    return room;
   }
 
   private generateUniqueRoomId(): string {

@@ -40,7 +40,13 @@ export function JoinRoomScreen({
         }}
         className="flex w-full flex-col items-center gap-10"
       >
-        <Image src="/logo.svg" alt="A Senha Logo" width={256} height={56} />
+        <Image
+          loading="eager"
+          src="/logo.svg"
+          alt="A Senha Logo"
+          width={256}
+          height={56}
+        />
 
         <Dialog>
           <DialogTrigger

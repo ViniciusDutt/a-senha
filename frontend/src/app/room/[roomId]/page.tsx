@@ -1,8 +1,9 @@
 "use client";
 
 import { CircleQuestionMark, Copy, Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { JoinRoomScreen } from "@/components/room/join-room-screen";
@@ -18,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Sunbeam } from "@/components/ui/sunbeam";
 import { Switch } from "@/components/ui/switch";
 import { socket } from "@/lib/socket";
+import type { Game } from "@/types/game";
 import type {
   JoinRoomResponse,
   ReconnectRoomResponse,
@@ -26,12 +28,21 @@ import type {
   StartRoomResponse,
   Team,
   UpdateRoomSettingsResponse,
+  UpdateTeamsResponse,
 } from "@/types/room";
 import { sleep } from "@/utils/sleep";
+
+type GameStartedPayload = {
+  room: Room;
+  game: Game;
+};
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
 
+  const router = useRouter();
+  const [countdown, setCountdown] = useState<string | null>(null);
+  const [isCountingDown, setIsCountingDown] = useState(false);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [name, setName] = useState("");
@@ -40,6 +51,8 @@ export default function RoomPage() {
   const [hasJoined, setHasJoined] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [chatTip, setChatTip] = useState(false);
+  const [isResettingTeams, setIsResettingTeams] = useState(false);
+  const [isRandomizingTeams, setIsRandomizingTeams] = useState(false);
 
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem(`room:${roomId}:playerId`);
@@ -56,6 +69,10 @@ export default function RoomPage() {
       }
     }
 
+    function handleGameCountdown() {
+      void runCountdown();
+    }
+
     function saveRoom(updatedRoom: Room) {
       setRoom(updatedRoom);
 
@@ -69,10 +86,18 @@ export default function RoomPage() {
       saveRoom(updatedRoom);
     }
 
-    function handleGameStarted(updatedRoom: Room) {
-      saveRoom(updatedRoom);
+    function handleGameStarted({
+      room: startedRoom,
+      game,
+    }: GameStartedPayload) {
+      saveRoom(startedRoom);
 
-      window.alert("Partida iniciada!");
+      sessionStorage.setItem(
+        `room:${startedRoom.id}:game`,
+        JSON.stringify(game),
+      );
+
+      router.push(`/room/${roomId}/game`);
     }
 
     function reconnectPlayer() {
@@ -107,6 +132,7 @@ export default function RoomPage() {
 
     socket.on("room:updated", handleRoomUpdated);
     socket.on("game:started", handleGameStarted);
+    socket.on("game:countdown", handleGameCountdown);
 
     if (storedPlayerId) {
       setHasJoined(true);
@@ -123,8 +149,30 @@ export default function RoomPage() {
       socket.off("room:updated", handleRoomUpdated);
       socket.off("game:started", handleGameStarted);
       socket.off("connect", reconnectPlayer);
+      socket.off("game:countdown", handleGameCountdown);
     };
-  }, [roomId]);
+  }, [roomId, router.push]);
+
+  async function runCountdown() {
+    setIsStarting(true);
+    setIsCountingDown(true);
+
+    setCountdown("3");
+    await sleep(1000);
+
+    setCountdown("2");
+    await sleep(1000);
+
+    setCountdown("1");
+    await sleep(1000);
+
+    setCountdown("GO!");
+    await sleep(1000);
+
+    setCountdown(null);
+    setIsCountingDown(false);
+    setIsStarting(false);
+  }
 
   function handleJoinRoom() {
     const normalizedName = name.trim();
@@ -208,7 +256,7 @@ export default function RoomPage() {
   }
 
   function handleStartRoom() {
-    if (isStarting || !socket.connected) {
+    if (isStarting || isCountingDown || !socket.connected || !canStart) {
       return;
     }
 
@@ -220,13 +268,12 @@ export default function RoomPage() {
         roomId,
       },
       (response: StartRoomResponse) => {
-        setIsStarting(false);
-
         if (!response.success) {
+          setIsStarting(false);
           return;
         }
 
-        const updatedRoom = response.data.room;
+        const { room: updatedRoom, game } = response.data;
 
         setRoom(updatedRoom);
 
@@ -234,6 +281,8 @@ export default function RoomPage() {
           `room:${roomId}:state`,
           JSON.stringify(updatedRoom),
         );
+
+        sessionStorage.setItem(`room:${roomId}:game`, JSON.stringify(game));
       },
     );
   }
@@ -320,6 +369,74 @@ export default function RoomPage() {
     team2Players.length === 2 &&
     allPlayersConnected;
 
+  function saveUpdatedRoom(updatedRoom: Room) {
+    setRoom(updatedRoom);
+
+    sessionStorage.setItem(
+      `room:${updatedRoom.id}:state`,
+      JSON.stringify(updatedRoom),
+    );
+  }
+
+  function handleResetTeams() {
+    if (
+      !socket.connected ||
+      !isOwner ||
+      isResettingTeams ||
+      isRandomizingTeams
+    ) {
+      return;
+    }
+
+    setIsResettingTeams(true);
+
+    socket.emit(
+      "room:reset-teams",
+      {
+        roomId,
+      },
+      (response: UpdateTeamsResponse) => {
+        setIsResettingTeams(false);
+
+        if (!response.success) {
+          return;
+        }
+
+        saveUpdatedRoom(response.data.room);
+      },
+    );
+  }
+
+  function handleRandomizeTeams() {
+    if (
+      !socket.connected ||
+      !isOwner ||
+      room?.players.length !== 4 ||
+      isResettingTeams ||
+      isRandomizingTeams
+    ) {
+      return;
+    }
+
+    setIsRandomizingTeams(true);
+
+    socket.emit(
+      "room:randomize-teams",
+      {
+        roomId,
+      },
+      (response: UpdateTeamsResponse) => {
+        setIsRandomizingTeams(false);
+
+        if (!response.success) {
+          return;
+        }
+
+        saveUpdatedRoom(response.data.room);
+      },
+    );
+  }
+
   return (
     <main className="relative flex h-dvh w-screen flex-col items-center overflow-hidden">
       <div className="flex w-full max-w-lg flex-col items-center gap-10 p-4">
@@ -393,6 +510,31 @@ export default function RoomPage() {
 
         {isOwner && (
           <div className="flex flex-col w-full items-center justify-center gap-4 lg:absolute lg:bottom-14 lg:left-1/2 lg:max-w-lg lg:-translate-x-1/2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={
+                isResettingTeams ||
+                isRandomizingTeams ||
+                room.players.every((player) => player.team === null)
+              }
+              onClick={handleResetTeams}
+            >
+              {isResettingTeams ? "Limpando..." : "Limpar times"}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              disabled={
+                room.players.length !== 4 ||
+                isResettingTeams ||
+                isRandomizingTeams
+              }
+              onClick={handleRandomizeTeams}
+            >
+              {isRandomizingTeams ? "Sorteando..." : "Sortear times"}
+            </Button>
             <div className="flex items-center gap-2">
               <Switch
                 id="chat"
@@ -423,12 +565,14 @@ export default function RoomPage() {
             </div>
             <Button
               type="button"
-              disabled={!canStart || isStarting}
+              disabled={!canStart || isStarting || isCountingDown}
               onClick={handleStartRoom}
               size="lg"
-              className="w-full"
+              className="flex-1"
             >
-              {isStarting ? (
+              {isCountingDown ? (
+                "Iniciando..."
+              ) : isStarting ? (
                 <Loader2 className="animate-spin" />
               ) : canStart ? (
                 "Iniciar partida"
@@ -453,6 +597,45 @@ export default function RoomPage() {
           Vinícius Dutra
         </Link>
       </span>
+      <AnimatePresence>
+        {countdown && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/80"
+          >
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={countdown}
+                initial={{
+                  opacity: 0,
+                  scale: 5,
+                  filter: "blur(24px)",
+                }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  filter: "blur(0px)",
+                }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.75,
+                  filter: "blur(8px)",
+                }}
+                transition={{
+                  duration: 0.45,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="select-none text-center font-black text-[clamp(8rem,30vw,24rem)] leading-none text-white"
+              >
+                {countdown}
+              </motion.span>
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
