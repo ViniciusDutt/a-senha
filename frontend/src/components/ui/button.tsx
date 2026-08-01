@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
   [
-    "group/button relative inline-flex shrink-0 cursor-pointer",
+    "group/button cursor-pointer relative inline-flex shrink-0 cursor-pointer",
     "border-0 bg-transparent p-0",
     "font-medium whitespace-nowrap select-none",
     "outline-offset-4",

@@ -57,6 +57,12 @@ type StartRoomParams = {
   socketId: string;
 };
 
+type UpdateRoomSettingsParams = {
+  roomId: string;
+  socketId: string;
+  chatEnabled: boolean;
+};
+
 @Injectable()
 export class RoomsService {
   private readonly rooms = new Map<string, Room>();
@@ -79,6 +85,9 @@ export class RoomsService {
       ownerId: playerId,
       status: RoomStatus.LOBBY,
       players: [owner],
+      settings: {
+        chatEnabled: false,
+      },
       createdAt: new Date(),
     };
 
@@ -171,6 +180,32 @@ export class RoomsService {
       playerId,
       room,
     };
+  }
+
+  updateSettings({ roomId, socketId, chatEnabled }: UpdateRoomSettingsParams): Room {
+    const room = this.rooms.get(roomId.toUpperCase());
+
+    if (!room) {
+      throw new WsException("Sala não encontrada.");
+    }
+
+    if (room.status !== RoomStatus.LOBBY) {
+      throw new WsException("As configurações não podem ser alteradas após o início.");
+    }
+
+    const player = room.players.find(currentPlayer => currentPlayer.socketId === socketId);
+
+    if (!player) {
+      throw new WsException("Jogador não encontrado na sala.");
+    }
+
+    if (!player.isOwner) {
+      throw new WsException("Apenas o dono pode alterar as configurações.");
+    }
+
+    room.settings.chatEnabled = chatEnabled;
+
+    return room;
   }
 
   startRoom({ roomId, socketId }: StartRoomParams): Room {

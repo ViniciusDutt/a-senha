@@ -6,5 +6,8 @@ export type Room = {
   ownerId: string;
   status: RoomStatus;
   players: Player[];
+  settings: {
+    chatEnabled: boolean;
+  };
   createdAt: Date;
 };

@@ -16,6 +16,9 @@ export type Room = {
   ownerId: string;
   status: RoomStatus;
   players: Player[];
+  settings: {
+    chatEnabled: boolean;
+  };
   createdAt: string;
 };
 
@@ -71,6 +74,18 @@ export type ReconnectRoomResponse =
     };
 
 export type StartRoomResponse =
+  | {
+      success: true;
+      data: {
+        room: Room;
+      };
+    }
+  | {
+      success: false;
+      message: string;
+    };
+
+export type UpdateRoomSettingsResponse =
   | {
       success: true;
       data: {

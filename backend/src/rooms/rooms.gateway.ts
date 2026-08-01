@@ -14,6 +14,7 @@ import { JoinRoomDto } from "./dto/join-room.dto";
 import { ReconnectRoomDto } from "./dto/reconnect-room.dto";
 import { SelectTeamDto } from "./dto/select-team.dto";
 import { StartRoomDto } from "./dto/start-room.dto";
+import { UpdateRoomSettingsDto } from "./dto/update-room-settings.dto";
 import { RoomsService } from "./rooms.service";
 
 @WebSocketGateway({
@@ -162,6 +163,27 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return {
       success: true,
       data: result,
+    };
+  }
+
+  @SubscribeMessage("room:update-settings")
+  handleUpdateSettings(
+    @MessageBody() data: UpdateRoomSettingsDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const room = this.roomsService.updateSettings({
+      roomId: data.roomId,
+      socketId: client.id,
+      chatEnabled: data.chatEnabled,
+    });
+
+    this.server.to(room.id).emit("room:updated", room);
+
+    return {
+      success: true,
+      data: {
+        room,
+      },
     };
   }
 }

@@ -19,11 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Sunbeam } from "@/components/ui/sunbeam";
 import { socket } from "@/lib/socket";
 import type { CreateRoomResponse } from "@/types/room";
-
-const sleep = (milliseconds: number) =>
-  new Promise<void>((resolve) => {
-    window.setTimeout(resolve, milliseconds);
-  });
+import { sleep } from "@/utils/sleep";
 
 export default function Home() {
   const router = useRouter();
@@ -245,7 +241,7 @@ export default function Home() {
           </Button>
         </div>
 
-        <span className="fixed bottom-2 text-white/50">
+        <span className="fixed text-xs bottom-2 text-white/50">
           Feito por{" "}
           <Link
             href="https://linkedin.com/in/ViniciusDutt"
