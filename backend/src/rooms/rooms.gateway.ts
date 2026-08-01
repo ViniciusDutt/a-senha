@@ -50,49 +50,37 @@ function success<T>(data: T): SuccessResponse<T> {
 
 @WebSocketGateway({
   cors: {
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
+    credentials: true,
   },
 })
-export class RoomsGateway
-  implements OnGatewayConnection, OnGatewayDisconnect {
+export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server!: Server;
 
-  private readonly logger = new Logger(
-    RoomsGateway.name,
-  );
+  private readonly logger = new Logger(RoomsGateway.name);
 
   constructor(
     private readonly roomsService: RoomsService,
     private readonly gameService: GameService,
     private readonly roomConnectionService: RoomConnectionService,
     private readonly gameSessionCoordinator: GameSessionCoordinatorService,
-  ) { }
+  ) {}
 
   handleConnection(client: Socket): void {
-    this.logger.log(
-      `Socket conectado: ${client.id}`,
-    );
+    this.logger.log(`Socket conectado: ${client.id}`);
   }
 
   handleDisconnect(client: Socket): void {
-    this.logger.log(
-      `Socket desconectado: ${client.id}`,
-    );
+    this.logger.log(`Socket desconectado: ${client.id}`);
 
-    this.roomConnectionService.handleDisconnect(
-      client.id,
-      room => {
-        this.emitRoomUpdated(room);
-      },
-    );
+    this.roomConnectionService.handleDisconnect(client.id, room => {
+      this.emitRoomUpdated(room);
+    });
   }
 
   @SubscribeMessage("room:create")
-  async handleCreateRoom(
-    @MessageBody() data: CreateRoomDto,
-    @ConnectedSocket() client: Socket,
-  ) {
+  async handleCreateRoom(@MessageBody() data: CreateRoomDto, @ConnectedSocket() client: Socket) {
     const result = this.roomsService.createRoom({
       name: data.name,
       socketId: client.id,
@@ -104,10 +92,7 @@ export class RoomsGateway
   }
 
   @SubscribeMessage("room:join")
-  async handleJoinRoom(
-    @MessageBody() data: JoinRoomDto,
-    @ConnectedSocket() client: Socket,
-  ) {
+  async handleJoinRoom(@MessageBody() data: JoinRoomDto, @ConnectedSocket() client: Socket) {
     const result = this.roomsService.joinRoom({
       roomId: data.roomId,
       name: data.name,
@@ -126,12 +111,11 @@ export class RoomsGateway
     @MessageBody() data: ReconnectRoomDto,
     @ConnectedSocket() client: Socket,
   ) {
-    const result =
-      this.roomConnectionService.reconnectPlayer({
-        roomId: data.roomId,
-        playerId: data.playerId,
-        socketId: client.id,
-      });
+    const result = this.roomConnectionService.reconnectPlayer({
+      roomId: data.roomId,
+      playerId: data.playerId,
+      socketId: client.id,
+    });
 
     await client.join(result.room.id);
 
@@ -145,32 +129,26 @@ export class RoomsGateway
     @MessageBody() data: ReconnectGameDto,
     @ConnectedSocket() client: Socket,
   ) {
-    const reconnectResult =
-      this.roomConnectionService.reconnectPlayer({
-        roomId: data.roomId,
-        playerId: data.playerId,
-        socketId: client.id,
-      });
+    const reconnectResult = this.roomConnectionService.reconnectPlayer({
+      roomId: data.roomId,
+      playerId: data.playerId,
+      socketId: client.id,
+    });
 
     await client.join(reconnectResult.room.id);
 
     const player = reconnectResult.room.players.find(
-      currentPlayer =>
-        currentPlayer.id ===
-        reconnectResult.playerId,
+      currentPlayer => currentPlayer.id === reconnectResult.playerId,
     );
 
     if (!player) {
-      throw new WsException(
-        "Jogador não encontrado na sala.",
-      );
+      throw new WsException("Jogador não encontrado na sala.");
     }
 
-    const gameResult =
-      this.gameService.getReconnectState({
-        roomId: reconnectResult.room.id,
-        player,
-      });
+    const gameResult = this.gameService.getReconnectState({
+      roomId: reconnectResult.room.id,
+      player,
+    });
 
     this.emitRoomUpdated(reconnectResult.room);
 
@@ -183,10 +161,7 @@ export class RoomsGateway
   }
 
   @SubscribeMessage("room:select-team")
-  handleSelectTeam(
-    @MessageBody() data: SelectTeamDto,
-    @ConnectedSocket() client: Socket,
-  ) {
+  handleSelectTeam(@MessageBody() data: SelectTeamDto, @ConnectedSocket() client: Socket) {
     const room = this.roomsService.selectTeam({
       roomId: data.roomId,
       socketId: client.id,
@@ -199,10 +174,7 @@ export class RoomsGateway
   }
 
   @SubscribeMessage("room:reset-teams")
-  handleResetTeams(
-    @MessageBody() data: ResetTeamsDto,
-    @ConnectedSocket() client: Socket,
-  ) {
+  handleResetTeams(@MessageBody() data: ResetTeamsDto, @ConnectedSocket() client: Socket) {
     const room = this.roomsService.resetTeams({
       roomId: data.roomId,
       socketId: client.id,
@@ -214,10 +186,7 @@ export class RoomsGateway
   }
 
   @SubscribeMessage("room:randomize-teams")
-  handleRandomizeTeams(
-    @MessageBody() data: RandomizeTeamsDto,
-    @ConnectedSocket() client: Socket,
-  ) {
+  handleRandomizeTeams(@MessageBody() data: RandomizeTeamsDto, @ConnectedSocket() client: Socket) {
     const room = this.roomsService.randomizeTeams({
       roomId: data.roomId,
       socketId: client.id,
@@ -245,27 +214,19 @@ export class RoomsGateway
   }
 
   @SubscribeMessage("room:start")
-  async handleStartRoom(
-    @MessageBody() data: StartRoomDto,
-    @ConnectedSocket() client: Socket,
-  ) {
-    const result =
-      await this.gameSessionCoordinator.startRoom({
-        roomId: data.roomId,
-        socketId: client.id,
-        onCountdown: roomId => {
-          this.server
-            .to(roomId)
-            .emit("game:countdown");
-        },
-      });
+  async handleStartRoom(@MessageBody() data: StartRoomDto, @ConnectedSocket() client: Socket) {
+    const result = await this.gameSessionCoordinator.startRoom({
+      roomId: data.roomId,
+      socketId: client.id,
+      onCountdown: roomId => {
+        this.server.to(roomId).emit("game:countdown");
+      },
+    });
 
-    this.server
-      .to(result.room.id)
-      .emit("game:started", {
-        room: result.room,
-        game: result.game,
-      });
+    this.server.to(result.room.id).emit("game:started", {
+      room: result.room,
+      game: result.game,
+    });
 
     return success({
       room: result.room,
@@ -274,35 +235,18 @@ export class RoomsGateway
   }
 
   @SubscribeMessage("game:start-turn")
-  handleStartTurn(
-    @MessageBody() data: StartTurnDto,
-    @ConnectedSocket() client: Socket,
-  ) {
-    const { room, player } =
-      this.findPlayerInRoom(
-        data.roomId,
-        client.id,
-      );
+  handleStartTurn(@MessageBody() data: StartTurnDto, @ConnectedSocket() client: Socket) {
+    const { room, player } = this.findPlayerInRoom(data.roomId, client.id);
 
-    const result =
-      this.gameSessionCoordinator.startTurn({
-        roomId: room.id,
-        player,
-        events: this.createGameSessionEvents(),
-      });
+    const result = this.gameSessionCoordinator.startTurn({
+      roomId: room.id,
+      player,
+      events: this.createGameSessionEvents(),
+    });
 
-    this.server
-      .to(room.id)
-      .emit(
-        "game:turn-started",
-        result.publicGame,
-      );
+    this.server.to(room.id).emit("game:turn-started", result.publicGame);
 
-    this.deliverCurrentWord(
-      room.id,
-      result.game,
-      result.word,
-    );
+    this.deliverCurrentWord(room.id, result.game, result.word);
 
     return success({
       game: result.publicGame,
@@ -310,15 +254,8 @@ export class RoomsGateway
   }
 
   @SubscribeMessage("game:submit-clue")
-  handleSubmitClue(
-    @MessageBody() data: SubmitClueDto,
-    @ConnectedSocket() client: Socket,
-  ) {
-    const { room, player } =
-      this.findPlayerInRoom(
-        data.roomId,
-        client.id,
-      );
+  handleSubmitClue(@MessageBody() data: SubmitClueDto, @ConnectedSocket() client: Socket) {
+    const { room, player } = this.findPlayerInRoom(data.roomId, client.id);
 
     const result = this.gameService.submitClue({
       roomId: room.id,
@@ -326,10 +263,7 @@ export class RoomsGateway
       clue: data.clue,
     });
 
-    this.emitGameUpdated(
-      room.id,
-      result.publicGame,
-    );
+    this.emitGameUpdated(room.id, result.publicGame);
 
     return success({
       game: result.publicGame,
@@ -337,15 +271,8 @@ export class RoomsGateway
   }
 
   @SubscribeMessage("game:submit-guess")
-  handleSubmitGuess(
-    @MessageBody() data: SubmitGuessDto,
-    @ConnectedSocket() client: Socket,
-  ) {
-    const { room, player } =
-      this.findPlayerInRoom(
-        data.roomId,
-        client.id,
-      );
+  handleSubmitGuess(@MessageBody() data: SubmitGuessDto, @ConnectedSocket() client: Socket) {
+    const { room, player } = this.findPlayerInRoom(data.roomId, client.id);
 
     const result = this.gameService.submitGuess({
       roomId: room.id,
@@ -353,17 +280,10 @@ export class RoomsGateway
       guess: data.guess,
     });
 
-    this.emitGameUpdated(
-      room.id,
-      result.publicGame,
-    );
+    this.emitGameUpdated(room.id, result.publicGame);
 
     if (result.word) {
-      this.deliverCurrentWord(
-        room.id,
-        result.game,
-        result.word,
-      );
+      this.deliverCurrentWord(room.id, result.game, result.word);
     }
 
     return success({
@@ -373,31 +293,17 @@ export class RoomsGateway
   }
 
   @SubscribeMessage("game:correct-word")
-  handleCorrectWord(
-    @MessageBody() data: CorrectWordDto,
-    @ConnectedSocket() client: Socket,
-  ) {
-    const { room, player } =
-      this.findPlayerInRoom(
-        data.roomId,
-        client.id,
-      );
+  handleCorrectWord(@MessageBody() data: CorrectWordDto, @ConnectedSocket() client: Socket) {
+    const { room, player } = this.findPlayerInRoom(data.roomId, client.id);
 
     const result = this.gameService.correctWord({
       roomId: room.id,
       playerId: player.id,
     });
 
-    this.emitGameUpdated(
-      room.id,
-      result.publicGame,
-    );
+    this.emitGameUpdated(room.id, result.publicGame);
 
-    this.deliverCurrentWord(
-      room.id,
-      result.game,
-      result.word,
-    );
+    this.deliverCurrentWord(room.id, result.game, result.word);
 
     return success({
       game: result.publicGame,
@@ -405,31 +311,17 @@ export class RoomsGateway
   }
 
   @SubscribeMessage("game:skip-word")
-  handleSkipWord(
-    @MessageBody() data: SkipWordDto,
-    @ConnectedSocket() client: Socket,
-  ) {
-    const { room, player } =
-      this.findPlayerInRoom(
-        data.roomId,
-        client.id,
-      );
+  handleSkipWord(@MessageBody() data: SkipWordDto, @ConnectedSocket() client: Socket) {
+    const { room, player } = this.findPlayerInRoom(data.roomId, client.id);
 
     const result = this.gameService.skipWord({
       roomId: room.id,
       playerId: player.id,
     });
 
-    this.emitGameUpdated(
-      room.id,
-      result.publicGame,
-    );
+    this.emitGameUpdated(room.id, result.publicGame);
 
-    this.deliverCurrentWord(
-      room.id,
-      result.game,
-      result.word,
-    );
+    this.deliverCurrentWord(room.id, result.game, result.word);
 
     return success({
       game: result.publicGame,
@@ -437,48 +329,27 @@ export class RoomsGateway
   }
 
   @SubscribeMessage("game:rematch")
-  handleRematch(
-    @MessageBody() data: RematchDto,
-    @ConnectedSocket() client: Socket,
-  ) {
-    const { room, player } =
-      this.findPlayerInRoom(
-        data.roomId,
-        client.id,
-      );
+  handleRematch(@MessageBody() data: RematchDto, @ConnectedSocket() client: Socket) {
+    const { room, player } = this.findPlayerInRoom(data.roomId, client.id);
 
     if (!player.isOwner) {
-      throw new WsException(
-        "Apenas o dono pode iniciar uma nova partida.",
-      );
+      throw new WsException("Apenas o dono pode iniciar uma nova partida.");
     }
 
-    if (
-      !this.gameService.isGameFinished(room.id)
-    ) {
-      throw new WsException(
-        "A partida ainda não terminou.",
-      );
+    if (!this.gameService.isGameFinished(room.id)) {
+      throw new WsException("A partida ainda não terminou.");
     }
 
-    const updatedRoom =
-      this.roomsService.returnToLobby({
-        roomId: room.id,
-        socketId: client.id,
-      });
+    const updatedRoom = this.roomsService.returnToLobby({
+      roomId: room.id,
+      socketId: client.id,
+    });
 
     this.gameService.deleteGame(room.id);
 
-    this.gameSessionCoordinator.clearRoomTimers(
-      room.id,
-    );
+    this.gameSessionCoordinator.clearRoomTimers(room.id);
 
-    this.server
-      .to(room.id)
-      .emit(
-        "room:returned-to-lobby",
-        updatedRoom,
-      );
+    this.server.to(room.id).emit("room:returned-to-lobby", updatedRoom);
 
     return success({
       room: updatedRoom,
@@ -492,24 +363,16 @@ export class RoomsGateway
     room: Room;
     player: Player;
   } {
-    const room =
-      this.roomsService.findRoomById(roomId);
+    const room = this.roomsService.findRoomById(roomId);
 
     if (!room) {
-      throw new WsException(
-        "Sala não encontrada.",
-      );
+      throw new WsException("Sala não encontrada.");
     }
 
-    const player = room.players.find(
-      currentPlayer =>
-        currentPlayer.socketId === socketId,
-    );
+    const player = room.players.find(currentPlayer => currentPlayer.socketId === socketId);
 
     if (!player) {
-      throw new WsException(
-        "Jogador não encontrado na sala.",
-      );
+      throw new WsException("Jogador não encontrado na sala.");
     }
 
     return {
@@ -519,71 +382,39 @@ export class RoomsGateway
   }
 
   private emitRoomUpdated(room: Room): void {
-    this.server
-      .to(room.id)
-      .emit("room:updated", room);
+    this.server.to(room.id).emit("room:updated", room);
   }
 
-  private emitGameUpdated(
-    roomId: string,
-    game: PublicGame,
-  ): void {
-    this.server
-      .to(roomId)
-      .emit("game:updated", game);
+  private emitGameUpdated(roomId: string, game: PublicGame): void {
+    this.server.to(roomId).emit("game:updated", game);
   }
 
-  private deliverCurrentWord(
-    roomId: string,
-    game: Game,
-    word: string,
-  ): void {
-    const activeRoles =
-      this.getActiveRoles(game);
+  private deliverCurrentWord(roomId: string, game: Game, word: string): void {
+    const activeRoles = this.getActiveRoles(game);
 
-    this.gameSessionCoordinator
-      .deliverWordToAllowedPlayers({
-        roomId,
-        activeTeam: game.activeTeam,
-        clueGiverId:
-          activeRoles.clueGiverId,
-        word,
-        onDeliver: (
-          socketId,
-          payload,
-        ) => {
-          this.server
-            .to(socketId)
-            .emit("game:word", payload);
-        },
-      });
+    this.gameSessionCoordinator.deliverWordToAllowedPlayers({
+      roomId,
+      activeTeam: game.activeTeam,
+      clueGiverId: activeRoles.clueGiverId,
+      word,
+      onDeliver: (socketId, payload) => {
+        this.server.to(socketId).emit("game:word", payload);
+      },
+    });
   }
 
   private getActiveRoles(game: Game) {
-    return game.activeTeam === Team.TEAM_1
-      ? game.roles.team1
-      : game.roles.team2;
+    return game.activeTeam === Team.TEAM_1 ? game.roles.team1 : game.roles.team2;
   }
 
   private createGameSessionEvents() {
     return {
-      onGameUpdated: (
-        roomId: string,
-        game: PublicGame,
-      ) => {
+      onGameUpdated: (roomId: string, game: PublicGame) => {
         this.emitGameUpdated(roomId, game);
       },
 
-      onTurnFinished: (
-        roomId: string,
-        game: PublicGame,
-      ) => {
-        this.server
-          .to(roomId)
-          .emit(
-            "game:turn-finished",
-            game,
-          );
+      onTurnFinished: (roomId: string, game: PublicGame) => {
+        this.server.to(roomId).emit("game:turn-finished", game);
       },
 
       onRoomUpdated: (room: Room) => {

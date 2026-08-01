@@ -37,10 +37,7 @@ type ChangeWordResult = {
   word: string;
 };
 
-type FinishTurnTransition =
-  | "next_turn"
-  | "round_finished"
-  | "game_finished";
+type FinishTurnTransition = "next_turn" | "round_finished" | "game_finished";
 
 type FinishTurnResult = {
   publicGame: PublicGame;
@@ -88,36 +85,19 @@ export class GameService {
     const roomId = this.normalizeRoomId(room.id);
 
     if (this.games.has(roomId)) {
-      throw new WsException(
-        "A partida desta sala já foi criada.",
-      );
+      throw new WsException("A partida desta sala já foi criada.");
     }
 
-    const team1Players = this.getRoomTeamPlayers(
-      room,
-      Team.TEAM_1,
-    );
+    const team1Players = this.getRoomTeamPlayers(room, Team.TEAM_1);
 
-    const team2Players = this.getRoomTeamPlayers(
-      room,
-      Team.TEAM_2,
-    );
+    const team2Players = this.getRoomTeamPlayers(room, Team.TEAM_2);
 
-    this.assertValidGameTeams(
-      team1Players,
-      team2Players,
-    );
+    this.assertValidGameTeams(team1Players, team2Players);
 
     const game = this.buildInitialGame({
       room,
-      team1Roles: this.createInitialRoles(
-        team1Players[0]?.id,
-        team1Players[1]?.id,
-      ),
-      team2Roles: this.createInitialRoles(
-        team2Players[0]?.id,
-        team2Players[1]?.id,
-      ),
+      team1Roles: this.createInitialRoles(team1Players[0]?.id, team1Players[1]?.id),
+      team2Roles: this.createInitialRoles(team2Players[0]?.id, team2Players[1]?.id),
     });
 
     this.games.set(roomId, game);
@@ -129,12 +109,8 @@ export class GameService {
     this.games.delete(this.normalizeRoomId(roomId));
   }
 
-  findGameByRoomId(
-    roomId: string,
-  ): Game | undefined {
-    return this.games.get(
-      this.normalizeRoomId(roomId),
-    );
+  findGameByRoomId(roomId: string): Game | undefined {
+    return this.games.get(this.normalizeRoomId(roomId));
   }
 
   isGameFinished(roomId: string): boolean {
@@ -143,24 +119,17 @@ export class GameService {
     return game?.phase === GamePhase.GAME_FINISHED;
   }
 
-  startTurn({
-    roomId,
-    player,
-  }: StartTurnParams): StartTurnResult {
+  startTurn({ roomId, player }: StartTurnParams): StartTurnResult {
     const game = this.getGameOrThrow(roomId);
 
     if (game.phase !== GamePhase.WAITING_TURN) {
-      throw new WsException(
-        "O turno não pode ser iniciado neste momento.",
-      );
+      throw new WsException("O turno não pode ser iniciado neste momento.");
     }
 
     const activeRoles = this.getActiveRoles(game);
 
     if (player.id !== activeRoles.clueGiverId) {
-      throw new WsException(
-        "Apenas o jogador responsável pelas dicas pode iniciar o turno.",
-      );
+      throw new WsException("Apenas o jogador responsável pelas dicas pode iniciar o turno.");
     }
 
     const word = this.selectNextWord(game);
@@ -168,9 +137,7 @@ export class GameService {
 
     game.phase = GamePhase.PLAYING;
     game.turnStartedAt = startedAt;
-    game.turnEndsAt = new Date(
-      startedAt.getTime() + TURN_DURATION_MS,
-    );
+    game.turnEndsAt = new Date(startedAt.getTime() + TURN_DURATION_MS);
 
     this.resetTurnInteraction(game);
 
@@ -193,14 +160,8 @@ export class GameService {
 
     this.clearActiveTurn(game);
 
-    if (
-      !game.turnsPlayedInRound.includes(
-        game.activeTeam,
-      )
-    ) {
-      game.turnsPlayedInRound.push(
-        game.activeTeam,
-      );
+    if (!game.turnsPlayedInRound.includes(game.activeTeam)) {
+      game.turnsPlayedInRound.push(game.activeTeam);
     }
 
     if (game.turnsPlayedInRound.length === 1) {
@@ -235,14 +196,10 @@ export class GameService {
     const game = this.getGameOrThrow(roomId);
 
     if (game.phase !== GamePhase.TURN_FINISHED) {
-      throw new WsException(
-        "O próximo turno não pode ser preparado agora.",
-      );
+      throw new WsException("O próximo turno não pode ser preparado agora.");
     }
 
-    game.activeTeam = this.getOppositeTeam(
-      game.activeTeam,
-    );
+    game.activeTeam = this.getOppositeTeam(game.activeTeam);
 
     game.phase = GamePhase.WAITING_TURN;
 
@@ -255,9 +212,7 @@ export class GameService {
     const game = this.getGameOrThrow(roomId);
 
     if (game.phase !== GamePhase.ROUND_FINISHED) {
-      throw new WsException(
-        "A próxima rodada não pode ser iniciada agora.",
-      );
+      throw new WsException("A próxima rodada não pode ser iniciada agora.");
     }
 
     game.round += 1;
@@ -275,10 +230,7 @@ export class GameService {
       team2: this.swapRoles(game.roles.team2),
     };
 
-    game.activeTeam =
-      game.round % 2 === 1
-        ? Team.TEAM_1
-        : Team.TEAM_2;
+    game.activeTeam = game.round % 2 === 1 ? Team.TEAM_1 : Team.TEAM_2;
 
     game.phase = GamePhase.WAITING_TURN;
 
@@ -287,42 +239,23 @@ export class GameService {
     return this.toPublicGame(game);
   }
 
-  submitClue({
-    roomId,
-    playerId,
-    clue,
-  }: SubmitClueParams): SubmitClueResult {
+  submitClue({ roomId, playerId, clue }: SubmitClueParams): SubmitClueResult {
     const game = this.getInputModeGame(roomId);
 
     if (game.turnInputPhase !== "waiting_clue") {
-      throw new WsException(
-        "Não é possível enviar uma dica neste momento.",
-      );
+      throw new WsException("Não é possível enviar uma dica neste momento.");
     }
 
     const activeRoles = this.getActiveRoles(game);
 
     if (playerId !== activeRoles.clueGiverId) {
-      throw new WsException(
-        "Apenas o jogador responsável pelas dicas pode enviar uma dica.",
-      );
+      throw new WsException("Apenas o jogador responsável pelas dicas pode enviar uma dica.");
     }
 
-    const validatedClue = this.validateSingleWord(
-      clue,
-      "dica",
-    );
+    const validatedClue = this.validateSingleWord(clue, "dica");
 
-    if (
-      game.currentWord &&
-      this.areWordsEqual(
-        validatedClue,
-        game.currentWord,
-      )
-    ) {
-      throw new WsException(
-        "A dica não pode ser igual à senha.",
-      );
+    if (game.currentWord && this.areWordsEqual(validatedClue, game.currentWord)) {
+      throw new WsException("A dica não pode ser igual à senha.");
     }
 
     game.currentClue = validatedClue;
@@ -335,47 +268,29 @@ export class GameService {
     };
   }
 
-  submitGuess({
-    roomId,
-    playerId,
-    guess,
-  }: SubmitGuessParams): SubmitGuessResult {
+  submitGuess({ roomId, playerId, guess }: SubmitGuessParams): SubmitGuessResult {
     const game = this.getInputModeGame(roomId);
 
     if (game.turnInputPhase !== "waiting_guess") {
-      throw new WsException(
-        "Não é possível enviar um palpite neste momento.",
-      );
+      throw new WsException("Não é possível enviar um palpite neste momento.");
     }
 
     const activeRoles = this.getActiveRoles(game);
 
     if (playerId !== activeRoles.guesserId) {
-      throw new WsException(
-        "Apenas o jogador responsável pelo palpite pode responder.",
-      );
+      throw new WsException("Apenas o jogador responsável pelo palpite pode responder.");
     }
 
-    const validatedGuess = this.validateSingleWord(
-      guess,
-      "palpite",
-    );
+    const validatedGuess = this.validateSingleWord(guess, "palpite");
 
     if (!game.currentWord) {
-      throw new WsException(
-        "A senha atual não foi encontrada.",
-      );
+      throw new WsException("A senha atual não foi encontrada.");
     }
 
-    const isCorrect = this.areWordsEqual(
-      validatedGuess,
-      game.currentWord,
-    );
+    const isCorrect = this.areWordsEqual(validatedGuess, game.currentWord);
 
     game.lastGuess = validatedGuess;
-    game.lastGuessResult = isCorrect
-      ? "correct"
-      : "wrong";
+    game.lastGuessResult = isCorrect ? "correct" : "wrong";
 
     game.turnInputPhase = "waiting_clue";
 
@@ -394,19 +309,14 @@ export class GameService {
     };
   }
 
-  correctWord({
-    roomId,
-    playerId,
-  }: ChangeWordParams): ChangeWordResult {
+  correctWord({ roomId, playerId }: ChangeWordParams): ChangeWordResult {
     const game = this.getControllableGame({
       roomId,
       playerId,
     });
 
     if (game.inputModeEnabled) {
-      throw new WsException(
-        "No modo por texto, o acerto é validado automaticamente.",
-      );
+      throw new WsException("No modo por texto, o acerto é validado automaticamente.");
     }
 
     this.incrementActiveTeamScore(game);
@@ -422,10 +332,7 @@ export class GameService {
     };
   }
 
-  skipWord({
-    roomId,
-    playerId,
-  }: ChangeWordParams): ChangeWordResult {
+  skipWord({ roomId, playerId }: ChangeWordParams): ChangeWordResult {
     const game = this.getControllableGame({
       roomId,
       playerId,
@@ -442,30 +349,20 @@ export class GameService {
     };
   }
 
-  getReconnectState({
-    roomId,
-    player,
-  }: ReconnectGameParams): ReconnectGameResult {
+  getReconnectState({ roomId, player }: ReconnectGameParams): ReconnectGameResult {
     const game = this.getGameOrThrow(roomId);
 
     const activeRoles = this.getActiveRoles(game);
 
-    const isClueGiver =
-      player.id === activeRoles.clueGiverId;
+    const isClueGiver = player.id === activeRoles.clueGiverId;
 
-    const isOpponent =
-      player.team !== null &&
-      player.team !== game.activeTeam;
+    const isOpponent = player.team !== null && player.team !== game.activeTeam;
 
-    const canSeeWord =
-      game.phase === GamePhase.PLAYING &&
-      (isClueGiver || isOpponent);
+    const canSeeWord = game.phase === GamePhase.PLAYING && (isClueGiver || isOpponent);
 
     return {
       publicGame: this.toPublicGame(game),
-      word: canSeeWord
-        ? game.currentWord
-        : null,
+      word: canSeeWord ? game.currentWord : null,
     };
   }
 
@@ -513,8 +410,7 @@ export class GameService {
     return {
       roomId: this.normalizeRoomId(room.id),
 
-      inputModeEnabled:
-        room.settings.chatEnabled,
+      inputModeEnabled: room.settings.chatEnabled,
 
       turnInputPhase: "waiting_clue",
       currentClue: null,
@@ -557,17 +453,9 @@ export class GameService {
     };
   }
 
-  private assertValidGameTeams(
-    team1Players: Player[],
-    team2Players: Player[],
-  ): void {
-    if (
-      team1Players.length !== 2 ||
-      team2Players.length !== 2
-    ) {
-      throw new WsException(
-        "Os dois times precisam ter exatamente dois jogadores.",
-      );
+  private assertValidGameTeams(team1Players: Player[], team2Players: Player[]): void {
+    if (team1Players.length !== 2 || team2Players.length !== 2) {
+      throw new WsException("Os dois times precisam ter exatamente dois jogadores.");
     }
   }
 
@@ -576,9 +464,7 @@ export class GameService {
     guesserId: string | undefined,
   ): TeamRoles {
     if (!clueGiverId || !guesserId) {
-      throw new WsException(
-        "Não foi possível definir os papéis da dupla.",
-      );
+      throw new WsException("Não foi possível definir os papéis da dupla.");
     }
 
     return {
@@ -588,39 +474,28 @@ export class GameService {
   }
 
   private getGameOrThrow(roomId: string): Game {
-    const game = this.games.get(
-      this.normalizeRoomId(roomId),
-    );
+    const game = this.games.get(this.normalizeRoomId(roomId));
 
     if (!game) {
-      throw new WsException(
-        "Partida não encontrada.",
-      );
+      throw new WsException("Partida não encontrada.");
     }
 
     return game;
   }
 
-  private getInputModeGame(
-    roomId: string,
-  ): Game {
+  private getInputModeGame(roomId: string): Game {
     const game = this.getGameOrThrow(roomId);
 
     this.assertGameIsPlaying(game);
 
     if (!game.inputModeEnabled) {
-      throw new WsException(
-        "O modo por texto não está ativo nesta partida.",
-      );
+      throw new WsException("O modo por texto não está ativo nesta partida.");
     }
 
     return game;
   }
 
-  private getControllableGame({
-    roomId,
-    playerId,
-  }: ChangeWordParams): Game {
+  private getControllableGame({ roomId, playerId }: ChangeWordParams): Game {
     const game = this.getGameOrThrow(roomId);
 
     this.assertGameIsPlaying(game);
@@ -628,9 +503,7 @@ export class GameService {
     const activeRoles = this.getActiveRoles(game);
 
     if (playerId !== activeRoles.clueGiverId) {
-      throw new WsException(
-        "Apenas o jogador responsável pelas dicas pode controlar as senhas.",
-      );
+      throw new WsException("Apenas o jogador responsável pelas dicas pode controlar as senhas.");
     }
 
     return game;
@@ -638,27 +511,19 @@ export class GameService {
 
   private assertGameIsPlaying(game: Game): void {
     if (game.phase !== GamePhase.PLAYING) {
-      throw new WsException(
-        "O turno não está em andamento.",
-      );
+      throw new WsException("O turno não está em andamento.");
     }
   }
 
   private getActiveRoles(game: Game): TeamRoles {
-    return game.activeTeam === Team.TEAM_1
-      ? game.roles.team1
-      : game.roles.team2;
+    return game.activeTeam === Team.TEAM_1 ? game.roles.team1 : game.roles.team2;
   }
 
   private getOppositeTeam(team: Team): Team {
-    return team === Team.TEAM_1
-      ? Team.TEAM_2
-      : Team.TEAM_1;
+    return team === Team.TEAM_1 ? Team.TEAM_2 : Team.TEAM_1;
   }
 
-  private incrementActiveTeamScore(
-    game: Game,
-  ): void {
+  private incrementActiveTeamScore(game: Game): void {
     if (game.activeTeam === Team.TEAM_1) {
       game.turnScores.team1 += 1;
       return;
@@ -667,13 +532,8 @@ export class GameService {
     game.turnScores.team2 += 1;
   }
 
-  private getRoomTeamPlayers(
-    room: Room,
-    team: Team,
-  ): Player[] {
-    return room.players.filter(
-      player => player.team === team,
-    );
+  private getRoomTeamPlayers(room: Room, team: Team): Player[] {
+    return room.players.filter(player => player.team === team);
   }
 
   private clearActiveTurn(game: Game): void {
@@ -684,9 +544,7 @@ export class GameService {
     this.resetTurnInteraction(game);
   }
 
-  private resetTurnInteraction(
-    game: Game,
-  ): void {
+  private resetTurnInteraction(game: Game): void {
     game.turnInputPhase = "waiting_clue";
     game.currentClue = null;
     game.lastGuess = null;
@@ -694,25 +552,17 @@ export class GameService {
   }
 
   private shouldFinishGame(game: Game): boolean {
-    const reachedWinCondition =
-      game.round <= game.totalRounds &&
-      this.hasGameWinner(game);
+    const reachedWinCondition = game.round <= game.totalRounds && this.hasGameWinner(game);
 
     if (reachedWinCondition) {
       return true;
     }
 
-    const finishedNormalRounds =
-      game.round >= game.totalRounds;
+    const finishedNormalRounds = game.round >= game.totalRounds;
 
-    const hasScoreDifference =
-      game.roundsWon.team1 !==
-      game.roundsWon.team2;
+    const hasScoreDifference = game.roundsWon.team1 !== game.roundsWon.team2;
 
-    return (
-      finishedNormalRounds &&
-      hasScoreDifference
-    );
+    return finishedNormalRounds && hasScoreDifference;
   }
 
   private finishRound(game: Game): void {
@@ -737,18 +587,12 @@ export class GameService {
   private finishGame(game: Game): void {
     game.phase = GamePhase.GAME_FINISHED;
 
-    if (
-      game.roundsWon.team1 >
-      game.roundsWon.team2
-    ) {
+    if (game.roundsWon.team1 > game.roundsWon.team2) {
       game.winner = Team.TEAM_1;
       return;
     }
 
-    if (
-      game.roundsWon.team2 >
-      game.roundsWon.team1
-    ) {
+    if (game.roundsWon.team2 > game.roundsWon.team1) {
       game.winner = Team.TEAM_2;
       return;
     }
@@ -757,22 +601,16 @@ export class GameService {
   }
 
   private hasGameWinner(game: Game): boolean {
-    const winsNeeded =
-      this.getWinsNeeded(game);
+    const winsNeeded = this.getWinsNeeded(game);
 
-    return (
-      game.roundsWon.team1 >= winsNeeded ||
-      game.roundsWon.team2 >= winsNeeded
-    );
+    return game.roundsWon.team1 >= winsNeeded || game.roundsWon.team2 >= winsNeeded;
   }
 
   private getWinsNeeded(game: Game): number {
     return Math.floor(game.totalRounds / 2) + 1;
   }
 
-  private getCurrentTransition(
-    game: Game,
-  ): FinishTurnTransition {
+  private getCurrentTransition(game: Game): FinishTurnTransition {
     if (game.phase === GamePhase.GAME_FINISHED) {
       return "game_finished";
     }
@@ -784,41 +622,25 @@ export class GameService {
     return "next_turn";
   }
 
-  private swapRoles(
-    roles: TeamRoles,
-  ): TeamRoles {
+  private swapRoles(roles: TeamRoles): TeamRoles {
     return {
       clueGiverId: roles.guesserId,
       guesserId: roles.clueGiverId,
     };
   }
 
-  private validateSingleWord(
-    value: string,
-    fieldName: "dica" | "palpite",
-  ): string {
+  private validateSingleWord(value: string, fieldName: "dica" | "palpite"): string {
     const normalizedValue = value.trim();
 
     if (!normalizedValue) {
-      throw new WsException(
-        fieldName === "dica"
-          ? "Digite uma dica."
-          : "Digite um palpite.",
-      );
+      throw new WsException(fieldName === "dica" ? "Digite uma dica." : "Digite um palpite.");
     }
 
-    if (
-      normalizedValue.split(/\s+/).length !== 1
-    ) {
-      throw new WsException(
-        `O ${fieldName} deve conter apenas uma palavra.`,
-      );
+    if (normalizedValue.split(/\s+/).length !== 1) {
+      throw new WsException(`O ${fieldName} deve conter apenas uma palavra.`);
     }
 
-    if (
-      normalizedValue.length >
-      MAX_INPUT_WORD_LENGTH
-    ) {
+    if (normalizedValue.length > MAX_INPUT_WORD_LENGTH) {
       throw new WsException(
         `O ${fieldName} deve ter no máximo ${MAX_INPUT_WORD_LENGTH} caracteres.`,
       );
@@ -827,14 +649,8 @@ export class GameService {
     return normalizedValue;
   }
 
-  private areWordsEqual(
-    firstWord: string,
-    secondWord: string,
-  ): boolean {
-    return (
-      this.normalizeWord(firstWord) ===
-      this.normalizeWord(secondWord)
-    );
+  private areWordsEqual(firstWord: string, secondWord: string): boolean {
+    return this.normalizeWord(firstWord) === this.normalizeWord(secondWord);
   }
 
   private normalizeWord(value: string): string {
@@ -855,33 +671,22 @@ export class GameService {
   }
 
   private getRandomWord(game: Game): string {
-    const availableWords = GAME_WORDS.filter(
-      word => !game.usedWords.includes(word),
-    );
+    const availableWords = GAME_WORDS.filter(word => !game.usedWords.includes(word));
 
     if (availableWords.length === 0) {
-      throw new WsException(
-        "Não há mais senhas disponíveis.",
-      );
+      throw new WsException("Não há mais senhas disponíveis.");
     }
 
-    const word =
-      availableWords[
-      randomInt(availableWords.length)
-      ];
+    const word = availableWords[randomInt(availableWords.length)];
 
     if (!word) {
-      throw new WsException(
-        "Não foi possível selecionar uma senha.",
-      );
+      throw new WsException("Não foi possível selecionar uma senha.");
     }
 
     return word;
   }
 
-  private normalizeRoomId(
-    roomId: string,
-  ): string {
+  private normalizeRoomId(roomId: string): string {
     return roomId.toUpperCase();
   }
 }

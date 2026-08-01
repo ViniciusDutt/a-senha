@@ -8,11 +8,6 @@ import { RoomsService } from "./rooms.service";
 
 @Module({
   imports: [GameModule],
-  providers: [
-    RoomsGateway,
-    RoomsService,
-    RoomConnectionService,
-    GameSessionCoordinatorService,
-  ],
+  providers: [RoomsGateway, RoomsService, RoomConnectionService, GameSessionCoordinatorService],
 })
-export class RoomsModule { }
+export class RoomsModule {}

@@ -1,12 +1,8 @@
-import {
-  Injectable,
-  Logger,
-  type OnModuleDestroy,
-} from "@nestjs/common";
+import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
 
 import { PLAYER_RECONNECT_GRACE_PERIOD_MS } from "../game/constants/game-timing.constants";
-import type { Room } from "./types/room.type";
 import { RoomsService } from "./rooms.service";
+import type { Room } from "./types/room.type";
 
 type ReconnectPlayerParams = {
   roomId: string;
@@ -22,29 +18,15 @@ type ReconnectPlayerResult = {
 type RoomUpdatedCallback = (room: Room) => void;
 
 @Injectable()
-export class RoomConnectionService
-  implements OnModuleDestroy {
-  private readonly logger = new Logger(
-    RoomConnectionService.name,
-  );
+export class RoomConnectionService implements OnModuleDestroy {
+  private readonly logger = new Logger(RoomConnectionService.name);
 
-  private readonly disconnectTimers = new Map<
-    string,
-    ReturnType<typeof setTimeout>
-  >();
+  private readonly disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  constructor(
-    private readonly roomsService: RoomsService,
-  ) { }
+  constructor(private readonly roomsService: RoomsService) {}
 
-  handleDisconnect(
-    socketId: string,
-    onRoomUpdated: RoomUpdatedCallback,
-  ): void {
-    const result =
-      this.roomsService.markPlayerAsDisconnected(
-        socketId,
-      );
+  handleDisconnect(socketId: string, onRoomUpdated: RoomUpdatedCallback): void {
+    const result = this.roomsService.markPlayerAsDisconnected(socketId);
 
     if (!result) {
       return;
@@ -59,11 +41,7 @@ export class RoomConnectionService
     const timer = setTimeout(() => {
       this.disconnectTimers.delete(playerId);
 
-      const updatedRoom =
-        this.roomsService.removePlayerById(
-          room.id,
-          playerId,
-        );
+      const updatedRoom = this.roomsService.removePlayerById(room.id, playerId);
 
       if (!updatedRoom) {
         return;
@@ -75,11 +53,7 @@ export class RoomConnectionService
     this.disconnectTimers.set(playerId, timer);
   }
 
-  reconnectPlayer({
-    roomId,
-    playerId,
-    socketId,
-  }: ReconnectPlayerParams): ReconnectPlayerResult {
+  reconnectPlayer({ roomId, playerId, socketId }: ReconnectPlayerParams): ReconnectPlayerResult {
     const result = this.roomsService.reconnectRoom({
       roomId,
       playerId,
@@ -92,8 +66,7 @@ export class RoomConnectionService
   }
 
   cancelPendingRemoval(playerId: string): void {
-    const timer =
-      this.disconnectTimers.get(playerId);
+    const timer = this.disconnectTimers.get(playerId);
 
     if (!timer) {
       return;
@@ -114,8 +87,6 @@ export class RoomConnectionService
 
     this.disconnectTimers.clear();
 
-    this.logger.log(
-      "Timers de desconexão foram encerrados.",
-    );
+    this.logger.log("Timers de desconexão foram encerrados.");
   }
 }

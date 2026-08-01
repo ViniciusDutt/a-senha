@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  type OnModuleDestroy,
-} from "@nestjs/common";
+import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
 import { WsException } from "@nestjs/websockets";
 
 import {
@@ -19,10 +15,7 @@ import { RoomsService } from "./rooms.service";
 import type { Player } from "./types/player.type";
 import type { Room } from "./types/room.type";
 
-type GameTransition =
-  | "next_turn"
-  | "round_finished"
-  | "game_finished";
+type GameTransition = "next_turn" | "round_finished" | "game_finished";
 
 type StartRoomParams = {
   roomId: string;
@@ -52,61 +45,37 @@ type DeliverWordParams = {
   activeTeam: Team;
   clueGiverId: string;
   word: string;
-  onDeliver: (
-    socketId: string,
-    payload: { word: string },
-  ) => void;
+  onDeliver: (socketId: string, payload: { word: string }) => void;
 };
 
 type GameSessionEvents = {
-  onGameUpdated: (
-    roomId: string,
-    game: PublicGame,
-  ) => void;
+  onGameUpdated: (roomId: string, game: PublicGame) => void;
 
-  onTurnFinished: (
-    roomId: string,
-    game: PublicGame,
-  ) => void;
+  onTurnFinished: (roomId: string, game: PublicGame) => void;
 
   onRoomUpdated: (room: Room) => void;
 };
 
 @Injectable()
-export class GameSessionCoordinatorService
-  implements OnModuleDestroy {
-  private readonly logger = new Logger(
-    GameSessionCoordinatorService.name,
-  );
+export class GameSessionCoordinatorService implements OnModuleDestroy {
+  private readonly logger = new Logger(GameSessionCoordinatorService.name);
 
   private readonly startingRooms = new Set<string>();
 
-  private readonly turnTimers = new Map<
-    string,
-    ReturnType<typeof setTimeout>
-  >();
+  private readonly turnTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  private readonly transitionTimers = new Map<
-    string,
-    ReturnType<typeof setTimeout>
-  >();
+  private readonly transitionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(
     private readonly roomsService: RoomsService,
     private readonly gameService: GameService,
-  ) { }
+  ) {}
 
-  async startRoom({
-    roomId,
-    socketId,
-    onCountdown,
-  }: StartRoomParams): Promise<StartRoomResult> {
+  async startRoom({ roomId, socketId, onCountdown }: StartRoomParams): Promise<StartRoomResult> {
     const normalizedRoomId = roomId.toUpperCase();
 
     if (this.startingRooms.has(normalizedRoomId)) {
-      throw new WsException(
-        "A partida já está sendo iniciada.",
-      );
+      throw new WsException("A partida já está sendo iniciada.");
     }
 
     const room = this.roomsService.validateStartRoom({
@@ -126,8 +95,7 @@ export class GameSessionCoordinatorService
         socketId,
       });
 
-      const game =
-        this.gameService.createGame(startedRoom);
+      const game = this.gameService.createGame(startedRoom);
 
       return {
         room: startedRoom,
@@ -138,20 +106,13 @@ export class GameSessionCoordinatorService
     }
   }
 
-  startTurn({
-    roomId,
-    player,
-    events,
-  }: StartTurnParams): StartTurnResult {
+  startTurn({ roomId, player, events }: StartTurnParams): StartTurnResult {
     const result = this.gameService.startTurn({
       roomId,
       player,
     });
 
-    this.scheduleTurnEnd(
-      result.game.roomId,
-      events,
-    );
+    this.scheduleTurnEnd(result.game.roomId, events);
 
     return result;
   }
@@ -169,17 +130,13 @@ export class GameSessionCoordinatorService
       return;
     }
 
-    const allowedPlayers = room.players.filter(
-      player => {
-        const isClueGiver =
-          player.id === clueGiverId;
+    const allowedPlayers = room.players.filter(player => {
+      const isClueGiver = player.id === clueGiverId;
 
-        const isOpponent =
-          player.team !== activeTeam;
+      const isOpponent = player.team !== activeTeam;
 
-        return isClueGiver || isOpponent;
-      },
-    );
+      return isClueGiver || isOpponent;
+    });
 
     for (const player of allowedPlayers) {
       onDeliver(player.socketId, {
@@ -198,9 +155,7 @@ export class GameSessionCoordinatorService
   }
 
   isRoomStarting(roomId: string): boolean {
-    return this.startingRooms.has(
-      roomId.toUpperCase(),
-    );
+    return this.startingRooms.has(roomId.toUpperCase());
   }
 
   onModuleDestroy(): void {
@@ -208,9 +163,7 @@ export class GameSessionCoordinatorService
       clearTimeout(timer);
     }
 
-    for (
-      const timer of this.transitionTimers.values()
-    ) {
+    for (const timer of this.transitionTimers.values()) {
       clearTimeout(timer);
     }
 
@@ -218,15 +171,10 @@ export class GameSessionCoordinatorService
     this.transitionTimers.clear();
     this.startingRooms.clear();
 
-    this.logger.log(
-      "Timers das partidas foram encerrados.",
-    );
+    this.logger.log("Timers das partidas foram encerrados.");
   }
 
-  private scheduleTurnEnd(
-    roomId: string,
-    events: GameSessionEvents,
-  ): void {
+  private scheduleTurnEnd(roomId: string, events: GameSessionEvents): void {
     const normalizedRoomId = roomId.toUpperCase();
 
     this.clearTurnTimer(normalizedRoomId);
@@ -235,37 +183,19 @@ export class GameSessionCoordinatorService
       this.turnTimers.delete(normalizedRoomId);
 
       try {
-        const result =
-          this.gameService.finishTurn(
-            normalizedRoomId,
-          );
+        const result = this.gameService.finishTurn(normalizedRoomId);
 
-        events.onTurnFinished(
-          normalizedRoomId,
-          result.publicGame,
-        );
+        events.onTurnFinished(normalizedRoomId, result.publicGame);
 
-        if (
-          result.transition === "game_finished"
-        ) {
-          const finishedRoom =
-            this.roomsService.finishRoom(
-              normalizedRoomId,
-            );
+        if (result.transition === "game_finished") {
+          const finishedRoom = this.roomsService.finishRoom(normalizedRoomId);
 
           events.onRoomUpdated(finishedRoom);
         }
 
-        this.scheduleGameTransition(
-          normalizedRoomId,
-          result.transition,
-          events,
-        );
+        this.scheduleGameTransition(normalizedRoomId, result.transition, events);
       } catch (error) {
-        this.logger.error(
-          `Erro ao finalizar o turno da sala ${normalizedRoomId}`,
-          error,
-        );
+        this.logger.error(`Erro ao finalizar o turno da sala ${normalizedRoomId}`, error);
       }
     }, TURN_DURATION_MS);
 
@@ -284,9 +214,7 @@ export class GameSessionCoordinatorService
     }
 
     const delay =
-      transition === "next_turn"
-        ? NEXT_TURN_TRANSITION_DELAY_MS
-        : NEXT_ROUND_TRANSITION_DELAY_MS;
+      transition === "next_turn" ? NEXT_TURN_TRANSITION_DELAY_MS : NEXT_ROUND_TRANSITION_DELAY_MS;
 
     const timer = setTimeout(() => {
       this.transitionTimers.delete(roomId);
@@ -294,22 +222,12 @@ export class GameSessionCoordinatorService
       try {
         const publicGame =
           transition === "next_turn"
-            ? this.gameService.prepareNextTurn(
-              roomId,
-            )
-            : this.gameService.advanceRound(
-              roomId,
-            );
+            ? this.gameService.prepareNextTurn(roomId)
+            : this.gameService.advanceRound(roomId);
 
-        events.onGameUpdated(
-          roomId,
-          publicGame,
-        );
+        events.onGameUpdated(roomId, publicGame);
       } catch (error) {
-        this.logger.error(
-          `Erro ao avançar a partida da sala ${roomId}`,
-          error,
-        );
+        this.logger.error(`Erro ao avançar a partida da sala ${roomId}`, error);
       }
     }, delay);
 
@@ -327,11 +245,8 @@ export class GameSessionCoordinatorService
     this.turnTimers.delete(roomId);
   }
 
-  private clearTransitionTimer(
-    roomId: string,
-  ): void {
-    const timer =
-      this.transitionTimers.get(roomId);
+  private clearTransitionTimer(roomId: string): void {
+    const timer = this.transitionTimers.get(roomId);
 
     if (!timer) {
       return;
