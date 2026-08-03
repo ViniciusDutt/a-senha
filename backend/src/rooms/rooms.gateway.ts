@@ -79,6 +79,11 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  @SubscribeMessage("game:ping")
+  handlePing() {
+    return success({ timestamp: Date.now() });
+  }
+
   @SubscribeMessage("room:create")
   async handleCreateRoom(@MessageBody() data: CreateRoomDto, @ConnectedSocket() client: Socket) {
     const result = this.roomsService.createRoom({

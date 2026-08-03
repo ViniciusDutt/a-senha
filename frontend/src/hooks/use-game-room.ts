@@ -68,6 +68,7 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
   const [hasLoaded, setHasLoaded] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState(0);
+  const [serverTimeOffset, setServerTimeOffset] = useState(0);
   const [currentWord, setCurrentWord] = useState<string | null>(null);
 
   const [clueInput, setClueInput] = useState("");
@@ -164,6 +165,16 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
     }
 
     function reconnectGame() {
+      const pingStartTime = Date.now();
+      socket.emit("game:ping", (response: { success: true; data: { timestamp: number } }) => {
+        const pingEndTime = Date.now();
+        const latency = pingEndTime - pingStartTime;
+        const serverTimestamp = response.data.timestamp;
+        
+        const offset = (serverTimestamp - pingEndTime) + (latency / 2);
+        setServerTimeOffset(offset);
+      });
+
       socket.emit(
         "game:reconnect",
         {
@@ -246,8 +257,9 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
 
     function updateTimer() {
       const endsAt = new Date(game?.turnEndsAt as string).getTime();
+      const adjustedNow = Date.now() + serverTimeOffset;
 
-      const remainingMilliseconds = endsAt - Date.now();
+      const remainingMilliseconds = endsAt - adjustedNow;
 
       const remainingSeconds = Math.max(
         0,
