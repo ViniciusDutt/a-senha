@@ -11,6 +11,7 @@ import { PlayingTurnPanel } from "@/components/game/playing-turn-panel";
 import { RoundFinishedPanel } from "@/components/game/round-finished-panel";
 import { TurnFinishedPanel } from "@/components/game/turn-finished-panel";
 import { WaitingTurnPanel } from "@/components/game/waiting-turn-panel";
+import { WordResultFlash } from "@/components/game/word-result-flash";
 import { Sunbeam } from "@/components/ui/sunbeam";
 import { useGameRoom } from "@/hooks/use-game-room";
 
@@ -68,6 +69,8 @@ export default function GamePage() {
 
   return (
     <main className="relative flex min-h-dvh flex-col items-center overflow-hidden p-4">
+      <WordResultFlash />
+
       <div className="z-10 flex w-full max-w-3xl flex-col gap-6">
         <GameHeader game={game} />
 

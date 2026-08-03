@@ -47,6 +47,9 @@ type UseRoomLobbyResult = {
   isOwner: boolean;
   canStart: boolean;
 
+  error: string | null;
+  clearError: () => void;
+
   joinRoom: () => void;
   selectTeam: (team: Team) => void;
   startRoom: () => void;
@@ -77,18 +80,20 @@ export function useRoomLobby(roomId: string): UseRoomLobbyResult {
   const saveRoom = useCallback((updatedRoom: Room) => {
     setRoom(updatedRoom);
 
-    sessionStorage.setItem(
+    localStorage.setItem(
       `room:${updatedRoom.id}:state`,
       JSON.stringify(updatedRoom),
     );
   }, []);
 
+  const [error, setError] = useState<string | null>(null);
+
   const clearStoredRoom = useCallback(() => {
-    sessionStorage.removeItem(`room:${roomId}:playerId`);
+    localStorage.removeItem(`room:${roomId}:playerId`);
 
-    sessionStorage.removeItem(`room:${roomId}:state`);
+    localStorage.removeItem(`room:${roomId}:state`);
 
-    sessionStorage.removeItem(`room:${roomId}:game`);
+    localStorage.removeItem(`room:${roomId}:game`);
   }, [roomId]);
 
   const resetPlayerSession = useCallback(() => {
@@ -98,6 +103,10 @@ export function useRoomLobby(roomId: string): UseRoomLobbyResult {
     setRoom(null);
     setHasJoined(false);
   }, [clearStoredRoom]);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
   const runCountdown = useCallback(async () => {
     setIsStarting(true);
@@ -121,9 +130,9 @@ export function useRoomLobby(roomId: string): UseRoomLobbyResult {
   }, []);
 
   useEffect(() => {
-    const storedPlayerId = sessionStorage.getItem(`room:${roomId}:playerId`);
+    const storedPlayerId = localStorage.getItem(`room:${roomId}:playerId`);
 
-    const storedRoom = sessionStorage.getItem(`room:${roomId}:state`);
+    const storedRoom = localStorage.getItem(`room:${roomId}:state`);
 
     setPlayerId(storedPlayerId);
 
@@ -131,7 +140,7 @@ export function useRoomLobby(roomId: string): UseRoomLobbyResult {
       try {
         setRoom(JSON.parse(storedRoom) as Room);
       } catch {
-        sessionStorage.removeItem(`room:${roomId}:state`);
+        localStorage.removeItem(`room:${roomId}:state`);
       }
     }
 
@@ -149,7 +158,7 @@ export function useRoomLobby(roomId: string): UseRoomLobbyResult {
     }: GameStartedPayload) {
       saveRoom(startedRoom);
 
-      sessionStorage.setItem(
+      localStorage.setItem(
         `room:${startedRoom.id}:game`,
         JSON.stringify(game),
       );
@@ -227,13 +236,14 @@ export function useRoomLobby(roomId: string): UseRoomLobbyResult {
         },
         async (response: JoinRoomResponse) => {
           if (!response.success) {
+            setError(response.message);
             setIsJoining(false);
             return;
           }
 
           const { playerId: joinedPlayerId, room: joinedRoom } = response.data;
 
-          sessionStorage.setItem(
+          localStorage.setItem(
             `room:${joinedRoom.id}:playerId`,
             joinedPlayerId,
           );
@@ -359,7 +369,7 @@ export function useRoomLobby(roomId: string): UseRoomLobbyResult {
 
         saveRoom(updatedRoom);
 
-        sessionStorage.setItem(`room:${roomId}:game`, JSON.stringify(game));
+        localStorage.setItem(`room:${roomId}:game`, JSON.stringify(game));
       },
     );
   }, [canStart, isCountingDown, isStarting, roomId, saveRoom]);
@@ -446,6 +456,9 @@ export function useRoomLobby(roomId: string): UseRoomLobbyResult {
 
     isOwner,
     canStart,
+
+    error,
+    clearError,
 
     joinRoom,
     selectTeam,

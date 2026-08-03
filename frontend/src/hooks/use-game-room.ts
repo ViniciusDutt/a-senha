@@ -87,7 +87,7 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
   const saveRoom = useCallback((updatedRoom: Room) => {
     setRoom(updatedRoom);
 
-    sessionStorage.setItem(
+    localStorage.setItem(
       `room:${updatedRoom.id}:state`,
       JSON.stringify(updatedRoom),
     );
@@ -96,18 +96,18 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
   const saveGame = useCallback((updatedGame: Game) => {
     setGame(updatedGame);
 
-    sessionStorage.setItem(
+    localStorage.setItem(
       `room:${updatedGame.roomId}:game`,
       JSON.stringify(updatedGame),
     );
   }, []);
 
   const clearStoredGameSession = useCallback(() => {
-    sessionStorage.removeItem(`room:${roomId}:state`);
+    localStorage.removeItem(`room:${roomId}:state`);
 
-    sessionStorage.removeItem(`room:${roomId}:game`);
+    localStorage.removeItem(`room:${roomId}:game`);
 
-    sessionStorage.removeItem(`room:${roomId}:playerId`);
+    localStorage.removeItem(`room:${roomId}:playerId`);
   }, [roomId]);
 
   const resetTurnInputs = useCallback(() => {
@@ -119,7 +119,7 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
   }, []);
 
   useEffect(() => {
-    const storedPlayerId = sessionStorage.getItem(`room:${roomId}:playerId`);
+    const storedPlayerId = localStorage.getItem(`room:${roomId}:playerId`);
 
     if (!storedPlayerId) {
       router.replace(`/room/${roomId}`);
@@ -158,7 +158,7 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
     function handleReturnedToLobby(updatedRoom: Room) {
       saveRoom(updatedRoom);
 
-      sessionStorage.removeItem(`room:${updatedRoom.id}:game`);
+      localStorage.removeItem(`room:${updatedRoom.id}:game`);
 
       router.replace(`/room/${updatedRoom.id}`);
     }
@@ -191,7 +191,7 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
           setCurrentWord(word);
           setHasLoaded(true);
 
-          sessionStorage.setItem(
+          localStorage.setItem(
             `room:${roomId}:playerId`,
             reconnectedPlayerId,
           );

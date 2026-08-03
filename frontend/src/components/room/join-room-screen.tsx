@@ -18,15 +18,19 @@ import { Author } from "../ui/author";
 type JoinRoomScreenProps = {
   name: string;
   isJoining: boolean;
+  error: string | null;
   onNameChange: (name: string) => void;
   onJoin: () => void;
+  onClearError: () => void;
 };
 
 export function JoinRoomScreen({
   name,
   isJoining,
+  error,
   onNameChange,
   onJoin,
+  onClearError,
 }: JoinRoomScreenProps) {
   return (
     <main className="relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden px-4 lg:px-10">
@@ -85,7 +89,10 @@ export function JoinRoomScreen({
           <Input
             value={name}
             disabled={isJoining}
-            onChange={(event) => onNameChange(event.target.value)}
+            onChange={(event) => {
+              onNameChange(event.target.value);
+              onClearError();
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 onJoin();
@@ -93,6 +100,8 @@ export function JoinRoomScreen({
             }}
             placeholder="Digite seu nome"
           />
+
+          {error && <p className="text-destructive text-sm">{error}</p>}
 
           <Button
             type="button"

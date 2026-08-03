@@ -303,6 +303,8 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.emitGameUpdated(room.id, result.publicGame);
 
+    this.server.to(room.id).emit("game:word-result", { isCorrect: true });
+
     this.deliverCurrentWord(room.id, result.game, result.word);
 
     return success({
@@ -320,6 +322,8 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
 
     this.emitGameUpdated(room.id, result.publicGame);
+
+    this.server.to(room.id).emit("game:word-result", { isCorrect: false });
 
     this.deliverCurrentWord(room.id, result.game, result.word);
 

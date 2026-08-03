@@ -51,8 +51,8 @@ export default function Home() {
 
         const { playerId, room } = result.data;
 
-        sessionStorage.setItem(`room:${room.id}:playerId`, playerId);
-        sessionStorage.setItem(`room:${room.id}:state`, JSON.stringify(room));
+        localStorage.setItem(`room:${room.id}:playerId`, playerId);
+        localStorage.setItem(`room:${room.id}:state`, JSON.stringify(room));
 
         await sleep(300);
 

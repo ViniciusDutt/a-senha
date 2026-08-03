@@ -37,6 +37,8 @@ export default function RoomPage() {
     resetTeams,
     randomizeTeams,
     updateChatEnabled,
+    error,
+    clearError,
   } = useRoomLobby(roomId);
 
   if (!hasJoined) {
@@ -44,8 +46,10 @@ export default function RoomPage() {
       <JoinRoomScreen
         name={name}
         isJoining={isJoining}
+        error={error}
         onNameChange={setName}
         onJoin={joinRoom}
+        onClearError={clearError}
       />
     );
   }
