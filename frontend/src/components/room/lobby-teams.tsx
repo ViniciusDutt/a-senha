@@ -15,7 +15,7 @@ export function LobbyTeams({
   onSelectTeam,
 }: LobbyTeamsProps) {
   return (
-    <div className="flex w-full flex-col items-center gap-6 lg:absolute lg:left-1/2 lg:top-1/2 lg:max-w-122 lg:-translate-x-1/2 lg:-translate-y-1/2">
+    <div className="flex w-full md:flex-col items-center gap-6 lg:absolute lg:left-1/2 lg:top-1/2 lg:max-w-122 lg:-translate-x-1/2 lg:-translate-y-1/2">
       <TeamPanel
         title="Time 1"
         team="team1"
@@ -27,7 +27,7 @@ export function LobbyTeams({
         onSelectTeam={onSelectTeam}
       />
 
-      <span className="text-5xl" aria-hidden="true">
+      <span className="text-3xl lg:text-5xl" aria-hidden="true">
         ⚔️
       </span>
 

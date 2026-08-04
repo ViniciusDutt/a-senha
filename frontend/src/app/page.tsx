@@ -4,7 +4,7 @@ import { CircleQuestionMark, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Author } from "@/components/ui/author";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,16 +16,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Sunbeam } from "@/components/ui/sunbeam";
 import { socket } from "@/lib/socket";
 import type { CreateRoomResponse } from "@/types/room";
 import { sleep } from "@/utils/sleep";
+import AdBanner from "@/components/ui/ad-banner";
+import useScreenSize from "@/hooks/use-screen-size";
 
 export default function Home() {
   const router = useRouter();
 
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const screenSize = useScreenSize()
 
   function handleCreateRoom() {
     const normalizedName = name.trim();
@@ -61,8 +63,66 @@ export default function Home() {
     );
   }
 
+  useEffect(() => {
+    setTimeout(function () {
+      var adsContainer = document.getElementsByClassName('adsContainer');
+      var adsElement = document.getElementsByClassName('adsbygoogle');
+
+      if (adsContainer) {
+        for (const el of adsContainer) {
+          el.setAttribute("style", "");
+        }
+      }
+      if (adsElement) {
+        for (const el of adsElement) {
+          el.setAttribute("style", "");
+        }
+      }
+    }, 700);
+  }, [])
+
   return (
-    <main className="relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden px-4 lg:px-10">
+    <main className="flex h-screen w-screen flex-col items-center justify-center px-4 lg:px-10">
+
+      {screenSize.width < 768 ? (
+        <div className="adsContainer">
+          <AdBanner
+            className="absolute top-1 left-1/2 -translate-x-1/2 rounded-xl w-76 h-13.5"
+            dataAdFormat="auto"
+            dataAdSlot="5034311157"
+            dataFullWidthResponsive={false}
+          />
+        </div>
+      ) : screenSize.width >= 768 && screenSize.width < 1024 ? (
+        <div className="adsContainer">
+          <AdBanner
+            className="absolute top-1 left-1/2 -translate-x-1/2 rounded-xl w-183 h-23.5"
+            dataAdFormat="auto"
+            dataAdSlot="9197897382"
+            dataFullWidthResponsive={false}
+          />
+        </div>
+      ) : (
+        <>
+          <div className="adsContainer">
+            <AdBanner
+              className="absolute top-1/2 left-4 -translate-y-1/2 rounded-xl w-41 h-151"
+              dataAdFormat="auto"
+              dataAdSlot="9197897382"
+              dataFullWidthResponsive={false}
+            />
+          </div>
+          <div className="adsContainer">
+            <AdBanner
+              className="absolute top-1/2 right-4 -translate-y-1/2 rounded-xl w-41 h-151"
+              dataAdFormat="auto"
+              dataAdSlot="9197897382"
+              dataFullWidthResponsive={false}
+            />
+          </div>
+        </>
+      )}
+
       <motion.div
         animate={{
           opacity: isLoading ? 0 : 1,
@@ -249,8 +309,6 @@ export default function Home() {
 
         <Author />
       </motion.div>
-
-      <Sunbeam />
     </main>
   );
 }

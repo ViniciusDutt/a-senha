@@ -1,5 +1,6 @@
 import type { Player, Team } from "@/types/room";
 import { getTeamName } from "@/utils/game-display";
+import { Button } from "../ui/button";
 
 type ActiveTeamPanelProps = {
   activeTeam: Team;
@@ -9,6 +10,8 @@ type ActiveTeamPanelProps = {
   isActiveTeam: boolean;
   isClueGiver: boolean;
   isGuesser: boolean;
+  isStartingTurn: boolean;
+  onStartTurn: () => void;
 };
 
 export function ActiveTeamPanel({
@@ -19,6 +22,8 @@ export function ActiveTeamPanel({
   isActiveTeam,
   isClueGiver,
   isGuesser,
+  isStartingTurn,
+  onStartTurn
 }: ActiveTeamPanelProps) {
   const playerMessage = getPlayerMessage({
     isActiveTeam,
@@ -32,7 +37,7 @@ export function ActiveTeamPanel({
     <section className="rounded-2xl bg-black/50 p-6 text-center">
       <p className="text-sm text-white/60">Vez do {getTeamName(activeTeam)}</p>
 
-      <h1 className="mt-2 font-bold text-3xl">{playerMessage}</h1>
+      <h1 className="mt-2 font-bold text-2xl">{playerMessage}</h1>
 
       <div className="mt-6 flex justify-center gap-4">
         {activeTeamPlayers.map((player) => (
@@ -45,6 +50,18 @@ export function ActiveTeamPanel({
           </div>
         ))}
       </div>
+
+      {isClueGiver && (
+        <Button
+          type="button"
+          size="lg"
+          disabled={isStartingTurn}
+          onClick={onStartTurn}
+          className="mt-6"
+        >
+          {isStartingTurn ? "Iniciando..." : "Começar turno"}
+        </Button>
+      )}
     </section>
   );
 }
@@ -73,9 +90,8 @@ function getPlayerMessage({
   }
 
   if (!isActiveTeam) {
-    return `${clueGiver?.name ?? "O jogador"} dará dicas para ${
-      guesser?.name ?? "seu parceiro"
-    }`;
+    return `${clueGiver?.name ?? "O jogador"} dará dicas para ${guesser?.name ?? "seu parceiro"
+      }`;
   }
 
   return "Aguarde o início do turno";

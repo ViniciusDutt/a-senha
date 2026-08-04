@@ -6,13 +6,10 @@ import { useParams } from "next/navigation";
 import { ActiveTeamPanel } from "@/components/game/active-team-panel";
 import { GameFinishedPanel } from "@/components/game/game-finished-panel";
 import { GameHeader } from "@/components/game/game-header";
-import { GameScoreboard } from "@/components/game/game-scoreboard";
 import { PlayingTurnPanel } from "@/components/game/playing-turn-panel";
 import { RoundFinishedPanel } from "@/components/game/round-finished-panel";
 import { TurnFinishedPanel } from "@/components/game/turn-finished-panel";
-import { WaitingTurnPanel } from "@/components/game/waiting-turn-panel";
 import { WordResultFlash } from "@/components/game/word-result-flash";
-import { Sunbeam } from "@/components/ui/sunbeam";
 import { useGameRoom } from "@/hooks/use-game-room";
 
 export default function GamePage() {
@@ -62,7 +59,6 @@ export default function GamePage() {
     return (
       <main className="relative flex h-dvh items-center justify-center overflow-hidden">
         <Loader2 className="size-8 animate-spin" />
-        <Sunbeam />
       </main>
     );
   }
@@ -72,27 +68,28 @@ export default function GamePage() {
       <WordResultFlash />
 
       <div className="z-10 flex w-full max-w-3xl flex-col gap-6">
-        <GameHeader game={game} />
-
-        <GameScoreboard game={game} />
-
-        <ActiveTeamPanel
-          activeTeam={game.activeTeam}
-          activeTeamPlayers={activeTeamPlayers}
-          clueGiver={clueGiver}
-          guesser={guesser}
-          isActiveTeam={isActiveTeam}
+        <GameHeader
+          game={game}
+          players={room.players}
+          timeLeft={timeLeft}
           isClueGiver={isClueGiver}
           isGuesser={isGuesser}
         />
 
         {game.phase === "waiting_turn" && (
-          <WaitingTurnPanel
+          <ActiveTeamPanel
+            activeTeam={game.activeTeam}
+            activeTeamPlayers={activeTeamPlayers}
+            clueGiver={clueGiver}
+            guesser={guesser}
+            isActiveTeam={isActiveTeam}
             isClueGiver={isClueGiver}
+            isGuesser={isGuesser}
             isStartingTurn={isStartingTurn}
             onStartTurn={startTurn}
           />
-        )}
+        )
+        }
 
         {game.phase === "playing" && (
           <PlayingTurnPanel
@@ -143,8 +140,6 @@ export default function GamePage() {
           />
         )}
       </div>
-
-      <Sunbeam />
     </main>
   );
 }

@@ -94,7 +94,6 @@ export function PlayingTurnPanel({
 
   return (
     <section className="rounded-2xl bg-black/50 p-6 text-center">
-      <TurnTimer timeLeft={timeLeft} />
 
       <WordDisplay
         game={game}
@@ -166,20 +165,6 @@ export function PlayingTurnPanel({
   );
 }
 
-type TurnTimerProps = {
-  timeLeft: number;
-};
-
-function TurnTimer({ timeLeft }: TurnTimerProps) {
-  return (
-    <div className="mb-6 flex justify-center">
-      <div className="flex size-24 items-center justify-center rounded-full border-4 border-white/20 bg-black/30">
-        <span className="font-black text-4xl">{timeLeft}</span>
-      </div>
-    </div>
-  );
-}
-
 type WordDisplayProps = {
   game: Game;
   currentWord: string | null;
@@ -200,7 +185,7 @@ function WordDisplay({
           {isClueGiver ? "A senha é" : "Senha da dupla adversária"}
         </p>
 
-        <h2 className="mt-3 font-black text-5xl uppercase">
+        <h2 className="mt-3 font-black text-3xl uppercase">
           {currentWord ?? ""}
         </h2>
       </>

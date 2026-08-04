@@ -112,16 +112,23 @@ export function useRoomLobby(roomId: string): UseRoomLobbyResult {
     setIsStarting(true);
     setIsCountingDown(true);
 
+    const countingAudio = new Audio("/counting.m4a");
+    const goAudio = new Audio("/go.m4a");
+
     setCountdown("3");
+    void countingAudio.play();
     await sleep(1_000);
 
     setCountdown("2");
+    void countingAudio.play();
     await sleep(1_000);
 
     setCountdown("1");
+    void countingAudio.play();
     await sleep(1_000);
 
     setCountdown("GO!");
+    void goAudio.play();
     await sleep(1_000);
 
     setCountdown(null);

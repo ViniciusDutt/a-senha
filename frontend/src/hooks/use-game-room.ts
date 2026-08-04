@@ -164,6 +164,10 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
       router.replace(`/room/${updatedRoom.id}`);
     }
 
+    function handleRoomUpdated(updatedRoom: Room) {
+      saveRoom(updatedRoom);
+    }
+
     function reconnectGame() {
       const pingStartTime = Date.now();
       socket.emit("game:ping", (response: { success: true; data: { timestamp: number } }) => {
@@ -218,6 +222,8 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
 
     socket.on("game:updated", handleGameUpdated);
 
+    socket.on("room:updated", handleRoomUpdated);
+
     socket.on("room:returned-to-lobby", handleReturnedToLobby);
 
     if (socket.connected) {
@@ -235,6 +241,8 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
       socket.off("game:turn-finished", handleTurnFinished);
 
       socket.off("game:updated", handleGameUpdated);
+
+      socket.off("room:updated", handleRoomUpdated);
 
       socket.off("room:returned-to-lobby", handleReturnedToLobby);
 

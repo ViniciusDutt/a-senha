@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import Script from "next/script";
+import { Sunbeam } from "@/components/ui/sunbeam";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -37,8 +39,16 @@ export default function RootLayout({
         inter.variable,
       )}
     >
-      <body className="min-h-full flex flex-col bg-black bg-linear-to-t from-background to-background/30">
+      <body className="min-h-full flex flex-col bg-black bg-linear-to-t from-background to-background/30 overflow-hidden">
+        <div className="-z-10 w-screen h-dvh overflow-hidden absolute">
+          <Sunbeam />
+        </div>
         {children}
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT_ID}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive" />
       </body>
     </html>
   );

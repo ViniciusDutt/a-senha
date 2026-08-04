@@ -33,7 +33,7 @@ export function LobbyHeader({ room, unassignedPlayers }: LobbyHeaderProps) {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <div className="relative flex min-h-23 w-full items-center justify-center gap-10 rounded-2xl bg-black/50 px-6 py-2">
+      <div className="relative flex min-h-23 w-full items-center justify-center gap-6 rounded-2xl bg-black/50 px-6 py-2">
         <h2 className="pointer-events-none absolute z-0 text-5xl font-bold text-white/10">
           Lobby
         </h2>

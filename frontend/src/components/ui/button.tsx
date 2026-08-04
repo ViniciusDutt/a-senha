@@ -64,10 +64,10 @@ const frontVariants = cva(
         default: ["bg-primary", "text-white"],
 
         outline: [
-          "border border-primary",
-          "bg-background",
-          "text-foreground",
-          "group-hover/button:bg-background/90",
+          "border border-chart-1",
+          "bg-chart-1",
+          "text-[#6d4500]",
+          "group-hover/button:bg-chart-1",
         ],
 
         ghost: ["bg-none", "text-foreground", "group-hover/button:bg-black/10"],
@@ -105,7 +105,7 @@ const edgeVariants = cva(["absolute inset-0 rounded-[12px]"], {
       ],
 
       outline: [
-        "bg-[linear-gradient(to_left,hsl(340deg_100%_16%)_0%,hsl(340deg_100%_32%)_8%,hsl(340deg_100%_32%)_92%,hsl(340deg_100%_16%)_100%)]",
+        "bg-[linear-gradient(to_left,hsl(340deg_100%_16%)_0%,#9c6c00_8%,#cd960e_92%,#9c6c00_100%)]",
       ],
 
       ghost: ["bg-none"],
