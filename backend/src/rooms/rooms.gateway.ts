@@ -106,7 +106,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleDisconnect(client: Socket): void {
     this.logger.log(`Socket desconectado: ${client.id}`);
 
-    this.roomConnectionService.handleDisconnect(client.id, this.createGameSessionEvents(), {
+    this.roomConnectionService.handleDisconnect(client.id, {
       onRoomUpdated: room => {
         this.emitRoomUpdated(room);
       },
