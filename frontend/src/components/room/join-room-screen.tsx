@@ -1,19 +1,12 @@
-import { CircleQuestionMark, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Sunbeam } from "@/components/ui/sunbeam";
 import { Author } from "../ui/author";
+import { HowToPlayDialog } from "../how-to-play-dialog";
 
 type JoinRoomScreenProps = {
   name: string;
@@ -52,38 +45,7 @@ export function JoinRoomScreen({
           height={80}
         />
 
-        <Dialog>
-          <DialogTrigger
-            render={
-              <Button variant="ghost">
-                <CircleQuestionMark />
-                Como jogar
-              </Button>
-            }
-          />
-
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Como jogar</DialogTitle>
-            </DialogHeader>
-
-            <div className="max-h-[70vh] space-y-3 overflow-y-auto px-4">
-              <DialogDescription>
-                <strong>A Senha</strong> é um jogo de raciocínio rápido e
-                trabalho em equipe disputado por dois times de duas pessoas.
-              </DialogDescription>
-
-              <DialogDescription>
-                Cada dupla possui uma pessoa responsável pelas dicas e outra
-                responsável por descobrir as senhas.
-              </DialogDescription>
-
-              <DialogDescription>
-                Cada dica pode conter apenas uma palavra relacionada à senha.
-              </DialogDescription>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <HowToPlayDialog />
 
         <div className="flex w-full max-w-lg flex-col items-center gap-4">
           <Input
