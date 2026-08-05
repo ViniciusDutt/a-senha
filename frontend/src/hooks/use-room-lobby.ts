@@ -165,10 +165,7 @@ export function useRoomLobby(roomId: string): UseRoomLobbyResult {
     }: GameStartedPayload) {
       saveRoom(startedRoom);
 
-      localStorage.setItem(
-        `room:${startedRoom.id}:game`,
-        JSON.stringify(game),
-      );
+      localStorage.setItem(`room:${startedRoom.id}:game`, JSON.stringify(game));
 
       router.push(`/room/${startedRoom.id}/game`);
     }

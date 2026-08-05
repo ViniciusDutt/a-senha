@@ -88,8 +88,7 @@ export default function GamePage() {
             isStartingTurn={isStartingTurn}
             onStartTurn={startTurn}
           />
-        )
-        }
+        )}
 
         {game.phase === "playing" && (
           <PlayingTurnPanel

@@ -2,17 +2,16 @@
 
 import { Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
-
+import { useEffect } from "react";
 import { GameCountdownOverlay } from "@/components/room/game-countdown-overlay";
 import { JoinRoomScreen } from "@/components/room/join-room-screen";
 import { LobbyHeader } from "@/components/room/lobby-header";
 import { LobbyOwnerControls } from "@/components/room/lobby-owner-controls";
 import { LobbyTeams } from "@/components/room/lobby-teams";
+import AdBanner from "@/components/ui/ad-banner";
 import { Author } from "@/components/ui/author";
 import { useRoomLobby } from "@/hooks/use-room-lobby";
-import AdBanner from "@/components/ui/ad-banner";
 import useScreenSize from "@/hooks/use-screen-size";
-import { useEffect } from "react";
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -42,12 +41,12 @@ export default function RoomPage() {
     error,
     clearError,
   } = useRoomLobby(roomId);
-  const screenSize = useScreenSize()
+  const screenSize = useScreenSize();
 
   useEffect(() => {
-    setTimeout(function () {
-      var adsContainer = document.getElementsByClassName('adsContainer');
-      var adsElement = document.getElementsByClassName('adsbygoogle');
+    setTimeout(() => {
+      var adsContainer = document.getElementsByClassName("adsContainer");
+      var adsElement = document.getElementsByClassName("adsbygoogle");
 
       if (adsContainer) {
         for (const el of adsContainer) {
@@ -60,7 +59,7 @@ export default function RoomPage() {
         }
       }
     }, 700);
-  }, [])
+  }, []);
 
   if (!hasJoined) {
     return (
@@ -85,7 +84,6 @@ export default function RoomPage() {
 
   return (
     <main className="relative flex h-dvh w-screen flex-col items-center overflow-hidden">
-
       {screenSize.width < 768 ? (
         <div className="adsContainer">
           <AdBanner

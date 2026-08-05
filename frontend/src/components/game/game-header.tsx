@@ -1,9 +1,13 @@
+import {
+  Eye,
+  Lightbulb,
+  MessageCircleQuestionMark,
+  Unplug,
+} from "lucide-react";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
 import type { Game } from "@/types/game";
 import type { Player } from "@/types/room";
-
-import Image from 'next/image'
-import { cn } from "@/lib/utils";
-import { Eye, Lightbulb, MessageCircleQuestionMark, Unplug } from "lucide-react";
 
 type GameHeaderProps = {
   game: Game;
@@ -13,7 +17,7 @@ type GameHeaderProps = {
   isGuesser: boolean;
 };
 
-export function GameHeader({ game, players, timeLeft, isClueGiver, isGuesser }: GameHeaderProps) {
+export function GameHeader({ game, players, timeLeft }: GameHeaderProps) {
   const isTiebreaker = game.round > game.totalRounds;
 
   const team1Players = players.filter((player) => player.team === "team1");
@@ -41,10 +45,12 @@ export function GameHeader({ game, players, timeLeft, isClueGiver, isGuesser }: 
 
     return (
       <div key={player.id} className="flex flex-col items-center gap-1">
-        <div className={cn(
-          "relative size-6 rounded-sm overflow-clip border-2",
-          player.team === "team1" ? "border-chart-2" : "border-primary"
-        )}>
+        <div
+          className={cn(
+            "relative size-6 rounded-sm overflow-clip border-2",
+            player.team === "team1" ? "border-chart-2" : "border-primary",
+          )}
+        >
           <Image
             src={`/avatars/avatar${avatarIndex + 1}.svg`}
             alt={`Avatar de ${player.name}`}
@@ -53,7 +59,7 @@ export function GameHeader({ game, players, timeLeft, isClueGiver, isGuesser }: 
             sizes="40px"
             className={cn(
               "object-cover",
-              !player.isConnected && "brightness-30"
+              !player.isConnected && "brightness-30",
             )}
           />
 
@@ -68,7 +74,6 @@ export function GameHeader({ game, players, timeLeft, isClueGiver, isGuesser }: 
       </div>
     );
   };
-
 
   return (
     <header className="grid grid-cols-3 rounded-2xl bg-black/50 p-4">
@@ -90,7 +95,9 @@ export function GameHeader({ game, players, timeLeft, isClueGiver, isGuesser }: 
 
       <div className="flex flex-col items-center gap-4">
         <p className="text-sm text-white font-bold">
-          {isTiebreaker ? `Extra ${game.round - game.totalRounds}` : `Rodada ${game.round}/${game.totalRounds}`}
+          {isTiebreaker
+            ? `Extra ${game.round - game.totalRounds}`
+            : `Rodada ${game.round}/${game.totalRounds}`}
         </p>
         {game.phase === "playing" ? (
           <div className="mb-6 flex justify-center">
@@ -98,7 +105,9 @@ export function GameHeader({ game, players, timeLeft, isClueGiver, isGuesser }: 
               <span className="font-black text-4xl">{timeLeft}</span>
             </div>
           </div>
-        ) : <p className="text-3xl font-bold">vs</p>}
+        ) : (
+          <p className="text-3xl font-bold">vs</p>
+        )}
       </div>
 
       <div className="flex flex-col items-center gap-2">

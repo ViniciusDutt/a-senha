@@ -23,7 +23,6 @@ export function TeamPanel({
   allPlayers,
   roomStatus,
   backgroundClassName,
-  buttonClassName,
   onSelectTeam,
 }: TeamPanelProps) {
   const isFull = players.length >= 2;
@@ -60,7 +59,10 @@ export function TeamPanel({
         <Button
           size="sm"
           disabled={isDisabled}
-          onClick={() => onSelectTeam(team)}>Entrar</Button>
+          onClick={() => onSelectTeam(team)}
+        >
+          Entrar
+        </Button>
       )}
     </div>
   );

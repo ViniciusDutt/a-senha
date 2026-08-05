@@ -23,7 +23,7 @@ export function ActiveTeamPanel({
   isClueGiver,
   isGuesser,
   isStartingTurn,
-  onStartTurn
+  onStartTurn,
 }: ActiveTeamPanelProps) {
   const playerMessage = getPlayerMessage({
     isActiveTeam,
@@ -90,8 +90,9 @@ function getPlayerMessage({
   }
 
   if (!isActiveTeam) {
-    return `${clueGiver?.name ?? "O jogador"} dará dicas para ${guesser?.name ?? "seu parceiro"
-      }`;
+    return `${clueGiver?.name ?? "O jogador"} dará dicas para ${
+      guesser?.name ?? "seu parceiro"
+    }`;
   }
 
   return "Aguarde o início do turno";

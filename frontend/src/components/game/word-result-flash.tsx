@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { socket } from "@/lib/socket";
 
@@ -28,11 +28,13 @@ export function WordResultFlash() {
           animate={{ opacity: 0 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className={`fixed inset-0 z-50 flex items-center justify-center pointer-events-none ${flash === "correct" ? "bg-green-500" : "bg-red-500"
-            }`}
+          className={`fixed inset-0 z-50 flex items-center justify-center pointer-events-none ${
+            flash === "correct" ? "bg-green-500" : "bg-red-500"
+          }`}
         >
-          <span className="text-7xl font-bold text-white">{flash === "correct" ? "Acertou!" : "Pulou"
-          }</span>
+          <span className="text-7xl font-bold text-white">
+            {flash === "correct" ? "Acertou!" : "Pulou"}
+          </span>
         </motion.div>
       )}
     </AnimatePresence>

@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import AdBanner from "@/components/ui/ad-banner";
 import { Author } from "@/components/ui/author";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,18 +17,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import useScreenSize from "@/hooks/use-screen-size";
 import { socket } from "@/lib/socket";
 import type { CreateRoomResponse } from "@/types/room";
 import { sleep } from "@/utils/sleep";
-import AdBanner from "@/components/ui/ad-banner";
-import useScreenSize from "@/hooks/use-screen-size";
 
 export default function Home() {
   const router = useRouter();
 
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const screenSize = useScreenSize()
+  const screenSize = useScreenSize();
 
   function handleCreateRoom() {
     const normalizedName = name.trim();
@@ -64,9 +64,9 @@ export default function Home() {
   }
 
   useEffect(() => {
-    setTimeout(function () {
-      var adsContainer = document.getElementsByClassName('adsContainer');
-      var adsElement = document.getElementsByClassName('adsbygoogle');
+    setTimeout(() => {
+      var adsContainer = document.getElementsByClassName("adsContainer");
+      var adsElement = document.getElementsByClassName("adsbygoogle");
 
       if (adsContainer) {
         for (const el of adsContainer) {
@@ -79,11 +79,10 @@ export default function Home() {
         }
       }
     }, 700);
-  }, [])
+  }, []);
 
   return (
     <main className="flex h-screen w-screen flex-col items-center justify-center px-4 lg:px-10">
-
       {screenSize.width < 768 ? (
         <div className="adsContainer">
           <AdBanner

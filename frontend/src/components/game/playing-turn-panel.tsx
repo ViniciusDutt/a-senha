@@ -63,7 +63,7 @@ export function PlayingTurnPanel({
 
   const { isActiveTeam, isClueGiver, isGuesser, canSeeWord } = role;
 
-  const { timeLeft, currentWord, isChangingWord } = turn;
+  const { currentWord, isChangingWord } = turn;
 
   const {
     clueInput,
@@ -94,7 +94,6 @@ export function PlayingTurnPanel({
 
   return (
     <section className="rounded-2xl bg-black/50 p-6 text-center">
-
       <WordDisplay
         game={game}
         currentWord={currentWord}

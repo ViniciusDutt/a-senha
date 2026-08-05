@@ -170,14 +170,17 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
 
     function reconnectGame() {
       const pingStartTime = Date.now();
-      socket.emit("game:ping", (response: { success: true; data: { timestamp: number } }) => {
-        const pingEndTime = Date.now();
-        const latency = pingEndTime - pingStartTime;
-        const serverTimestamp = response.data.timestamp;
-        
-        const offset = (serverTimestamp - pingEndTime) + (latency / 2);
-        setServerTimeOffset(offset);
-      });
+      socket.emit(
+        "game:ping",
+        (response: { success: true; data: { timestamp: number } }) => {
+          const pingEndTime = Date.now();
+          const latency = pingEndTime - pingStartTime;
+          const serverTimestamp = response.data.timestamp;
+
+          const offset = serverTimestamp - pingEndTime + latency / 2;
+          setServerTimeOffset(offset);
+        },
+      );
 
       socket.emit(
         "game:reconnect",
@@ -206,10 +209,7 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
           setCurrentWord(word);
           setHasLoaded(true);
 
-          localStorage.setItem(
-            `room:${roomId}:playerId`,
-            reconnectedPlayerId,
-          );
+          localStorage.setItem(`room:${roomId}:playerId`, reconnectedPlayerId);
         },
       );
     }
@@ -285,7 +285,7 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
     return () => {
       window.clearInterval(interval);
     };
-  }, [game?.phase, game?.turnEndsAt]);
+  }, [game?.phase, game?.turnEndsAt, serverTimeOffset]);
 
   useEffect(() => {
     setInputError(null);
