@@ -31,6 +31,7 @@ export type Game = {
 
   activeTeam: Team;
   phase: GamePhase;
+  isPaused: boolean;
 
   roles: {
     team1: TeamRoles;

@@ -54,6 +54,16 @@ type ReconnectGameResult = {
   word: string | null;
 };
 
+type PauseGameResult = {
+  publicGame: PublicGame;
+  remainingTurnMs: number | null;
+};
+
+type ResumeGameResult = {
+  publicGame: PublicGame;
+  remainingTurnMs: number | null;
+};
+
 type SubmitClueParams = {
   roomId: string;
   playerId: string;
@@ -121,6 +131,8 @@ export class GameService {
 
   startTurn({ roomId, player }: StartTurnParams): StartTurnResult {
     const game = this.getGameOrThrow(roomId);
+
+    this.assertGameIsNotPaused(game);
 
     if (game.phase !== GamePhase.WAITING_TURN) {
       throw new WsException("O turno não pode ser iniciado neste momento.");
@@ -349,6 +361,42 @@ export class GameService {
     };
   }
 
+  pauseGame(roomId: string): PauseGameResult {
+    const game = this.getGameOrThrow(roomId);
+
+    const wasAlreadyPaused = game.isPaused;
+
+    game.isPaused = true;
+
+    if (!wasAlreadyPaused && game.phase === GamePhase.PLAYING && game.turnEndsAt) {
+      game.pausedRemainingTurnMs = Math.max(0, game.turnEndsAt.getTime() - Date.now());
+    }
+
+    return {
+      publicGame: this.toPublicGame(game),
+      remainingTurnMs: game.pausedRemainingTurnMs,
+    };
+  }
+
+  resumeGame(roomId: string): ResumeGameResult {
+    const game = this.getGameOrThrow(roomId);
+
+    game.isPaused = false;
+
+    const remainingTurnMs = game.pausedRemainingTurnMs;
+
+    game.pausedRemainingTurnMs = null;
+
+    if (remainingTurnMs !== null && game.phase === GamePhase.PLAYING) {
+      game.turnEndsAt = new Date(Date.now() + remainingTurnMs);
+    }
+
+    return {
+      publicGame: this.toPublicGame(game),
+      remainingTurnMs,
+    };
+  }
+
   getReconnectState({ roomId, player }: ReconnectGameParams): ReconnectGameResult {
     const game = this.getGameOrThrow(roomId);
 
@@ -377,6 +425,7 @@ export class GameService {
 
       activeTeam: game.activeTeam,
       phase: game.phase,
+      isPaused: game.isPaused,
 
       roles: game.roles,
 
@@ -422,6 +471,7 @@ export class GameService {
 
       activeTeam: Team.TEAM_1,
       phase: GamePhase.WAITING_TURN,
+      isPaused: false,
 
       roles: {
         team1: team1Roles,
@@ -448,6 +498,7 @@ export class GameService {
 
       turnStartedAt: null,
       turnEndsAt: null,
+      pausedRemainingTurnMs: null,
 
       createdAt: new Date(),
     };
@@ -486,6 +537,7 @@ export class GameService {
   private getInputModeGame(roomId: string): Game {
     const game = this.getGameOrThrow(roomId);
 
+    this.assertGameIsNotPaused(game);
     this.assertGameIsPlaying(game);
 
     if (!game.inputModeEnabled) {
@@ -498,6 +550,7 @@ export class GameService {
   private getControllableGame({ roomId, playerId }: ChangeWordParams): Game {
     const game = this.getGameOrThrow(roomId);
 
+    this.assertGameIsNotPaused(game);
     this.assertGameIsPlaying(game);
 
     const activeRoles = this.getActiveRoles(game);
@@ -512,6 +565,12 @@ export class GameService {
   private assertGameIsPlaying(game: Game): void {
     if (game.phase !== GamePhase.PLAYING) {
       throw new WsException("O turno não está em andamento.");
+    }
+  }
+
+  private assertGameIsNotPaused(game: Game): void {
+    if (game.isPaused) {
+      throw new WsException("A partida está pausada aguardando a reconexão de um jogador.");
     }
   }
 

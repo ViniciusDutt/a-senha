@@ -1,3 +1,4 @@
+import { CircleQuestionMark } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +8,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "./ui/button";
-import { CircleQuestionMark } from "lucide-react";
 
 function HowToPlayDialog() {
   return (
@@ -28,31 +28,28 @@ function HowToPlayDialog() {
         <div className=" max-h-[70vh] overflow-y-auto space-y-3 px-4">
           <div className="space-y-3">
             <DialogDescription>
-              <strong>A Senha</strong> é um jogo de raciocínio rápido e
-              trabalho em equipe disputado por dois times de duas pessoas.
+              <strong>A Senha</strong> é um jogo de raciocínio rápido e trabalho
+              em equipe disputado por dois times de duas pessoas.
             </DialogDescription>
 
             <DialogDescription>
-              A partida possui <strong>5 rodadas</strong>. Em cada rodada,
-              os dois times jogam separadamente, um de cada vez, e têm{" "}
-              <strong>60 segundos</strong> para acertar o maior número
-              possível de palavras, chamadas de senhas.
+              A partida possui <strong>5 rodadas</strong>. Em cada rodada, os
+              dois times jogam separadamente, um de cada vez, e têm{" "}
+              <strong>60 segundos</strong> para acertar o maior número possível
+              de palavras, chamadas de senhas.
             </DialogDescription>
 
-            <h3 className="font-semibold text-lg">
-              Como funciona uma rodada
-            </h3>
+            <h3 className="font-semibold text-lg">Como funciona uma rodada</h3>
 
             <DialogDescription>
-              Em cada dupla, uma pessoa será responsável por dar as dicas e
-              a outra deverá tentar descobrir a senha.
+              Em cada dupla, uma pessoa será responsável por dar as dicas e a
+              outra deverá tentar descobrir a senha.
             </DialogDescription>
 
             <DialogDescription>
               A pessoa que dá as dicas pode falar apenas{" "}
-              <strong>uma palavra por vez</strong>, sempre relacionada à
-              senha. Depois de cada dica, seu parceiro pode tentar
-              responder.
+              <strong>uma palavra por vez</strong>, sempre relacionada à senha.
+              Depois de cada dica, seu parceiro pode tentar responder.
             </DialogDescription>
           </div>
 
@@ -95,16 +92,14 @@ function HowToPlayDialog() {
                 próxima.
               </li>
               <li>A dica deve ter alguma relação com a senha.</li>
+              <li>Não é permitido soletrar, fazer gestos ou indicar letras.</li>
               <li>
-                Não é permitido soletrar, fazer gestos ou indicar letras.
+                É possível dar várias dicas para a mesma senha, desde que sejam
+                faladas uma de cada vez.
               </li>
               <li>
-                É possível dar várias dicas para a mesma senha, desde que
-                sejam faladas uma de cada vez.
-              </li>
-              <li>
-                Caso a dupla fique presa em uma senha, a pessoa que dá as
-                dicas pode pulá-la e seguir para a próxima.
+                Caso a dupla fique presa em uma senha, a pessoa que dá as dicas
+                pode pulá-la e seguir para a próxima.
               </li>
             </ul>
           </div>
@@ -118,8 +113,8 @@ function HowToPlayDialog() {
             </DialogDescription>
 
             <DialogDescription>
-              Depois que os dois times jogarem, vence a rodada o time que
-              tiver acertado mais senhas.
+              Depois que os dois times jogarem, vence a rodada o time que tiver
+              acertado mais senhas.
             </DialogDescription>
           </div>
 
@@ -145,14 +140,14 @@ function HowToPlayDialog() {
             </DialogDescription>
 
             <DialogDescription>
-              Em caso de empate no placar final, uma rodada extra de
-              desempate poderá ser disputada.
+              Em caso de empate no placar final, uma rodada extra de desempate
+              poderá ser disputada.
             </DialogDescription>
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
-export { HowToPlayDialog }
+export { HowToPlayDialog };

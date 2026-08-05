@@ -5,8 +5,8 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sunbeam } from "@/components/ui/sunbeam";
-import { Author } from "../ui/author";
 import { HowToPlayDialog } from "../how-to-play-dialog";
+import { Author } from "../ui/author";
 
 type JoinRoomScreenProps = {
   name: string;
@@ -63,7 +63,13 @@ export function JoinRoomScreen({
             placeholder="Digite seu nome"
           />
 
-          {error && <p className="text-destructive text-sm">{error}</p>}
+          {error && (
+            <div className="bg-white rounded-sm overflow-clip">
+              <div className="px-3 py-1 bg-destructive/20">
+                <p className="text-destructive text-sm">{error}</p>
+              </div>
+            </div>
+          )}
 
           <Button
             type="button"

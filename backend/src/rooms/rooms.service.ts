@@ -334,6 +334,22 @@ export class RoomsService {
     return room;
   }
 
+  cancelToLobby(roomId: string): Room | null {
+    const room = this.rooms.get(this.normalizeRoomId(roomId));
+
+    if (!room) {
+      return null;
+    }
+
+    room.status = RoomStatus.LOBBY;
+
+    for (const player of room.players) {
+      player.team = null;
+    }
+
+    return room;
+  }
+
   returnToLobby({ roomId, socketId }: RoomOwnerActionParams): Room {
     const room = this.getRoomOrThrow(roomId);
 

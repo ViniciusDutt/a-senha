@@ -48,7 +48,7 @@ type DeliverWordParams = {
   onDeliver: (socketId: string, payload: { word: string }) => void;
 };
 
-type GameSessionEvents = {
+export type GameSessionEvents = {
   onGameUpdated: (roomId: string, game: PublicGame) => void;
 
   onTurnFinished: (roomId: string, game: PublicGame) => void;
@@ -117,6 +117,18 @@ export class GameSessionCoordinatorService implements OnModuleDestroy {
     return result;
   }
 
+  pauseTurnTimer(roomId: string): void {
+    this.clearTurnTimer(roomId.toUpperCase());
+  }
+
+  resumeTurnTimer(roomId: string, remainingTurnMs: number, events: GameSessionEvents): void {
+    if (remainingTurnMs <= 0) {
+      return;
+    }
+
+    this.scheduleTurnEnd(roomId, events, remainingTurnMs);
+  }
+
   deliverWordToAllowedPlayers({
     roomId,
     activeTeam,
@@ -174,7 +186,11 @@ export class GameSessionCoordinatorService implements OnModuleDestroy {
     this.logger.log("Timers das partidas foram encerrados.");
   }
 
-  private scheduleTurnEnd(roomId: string, events: GameSessionEvents): void {
+  private scheduleTurnEnd(
+    roomId: string,
+    events: GameSessionEvents,
+    durationMs: number = TURN_DURATION_MS,
+  ): void {
     const normalizedRoomId = roomId.toUpperCase();
 
     this.clearTurnTimer(normalizedRoomId);
@@ -197,7 +213,7 @@ export class GameSessionCoordinatorService implements OnModuleDestroy {
       } catch (error) {
         this.logger.error(`Erro ao finalizar o turno da sala ${normalizedRoomId}`, error);
       }
-    }, TURN_DURATION_MS);
+    }, durationMs);
 
     this.turnTimers.set(normalizedRoomId, timer);
   }

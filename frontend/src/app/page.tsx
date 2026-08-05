@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { HowToPlayDialog } from "@/components/how-to-play-dialog";
 import AdBanner from "@/components/ui/ad-banner";
 import { Author } from "@/components/ui/author";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,6 @@ import useScreenSize from "@/hooks/use-screen-size";
 import { socket } from "@/lib/socket";
 import type { CreateRoomResponse } from "@/types/room";
 import { sleep } from "@/utils/sleep";
-import { HowToPlayDialog } from "@/components/how-to-play-dialog";
 
 export default function Home() {
   const router = useRouter();

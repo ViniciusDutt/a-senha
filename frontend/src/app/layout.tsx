@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     title: "A Senha",
     statusBarStyle: "default",
-    capable: true
+    capable: true,
   },
 
   keywords: [

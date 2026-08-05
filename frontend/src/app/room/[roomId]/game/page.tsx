@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { ActiveTeamPanel } from "@/components/game/active-team-panel";
 import { GameFinishedPanel } from "@/components/game/game-finished-panel";
 import { GameHeader } from "@/components/game/game-header";
+import { GamePausedOverlay } from "@/components/game/game-paused-overlay";
 import { PlayingTurnPanel } from "@/components/game/playing-turn-panel";
 import { RoundFinishedPanel } from "@/components/game/round-finished-panel";
 import { TurnFinishedPanel } from "@/components/game/turn-finished-panel";
@@ -27,6 +28,9 @@ export default function GamePage() {
     hasLoaded,
     timeLeft,
     currentWord,
+
+    isPaused,
+    disconnectedPlayers,
 
     isActiveTeam,
     isClueGiver,
@@ -66,6 +70,11 @@ export default function GamePage() {
   return (
     <main className="relative flex min-h-dvh flex-col items-center overflow-hidden p-4">
       <WordResultFlash />
+
+      <GamePausedOverlay
+        isPaused={isPaused}
+        disconnectedPlayers={disconnectedPlayers}
+      />
 
       <div className="z-10 flex w-full max-w-3xl flex-col gap-6">
         <GameHeader

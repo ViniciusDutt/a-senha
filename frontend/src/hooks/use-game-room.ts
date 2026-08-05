@@ -30,6 +30,9 @@ type UseGameRoomResult = {
   timeLeft: number;
   currentWord: string | null;
 
+  isPaused: boolean;
+  disconnectedPlayers: Player[];
+
   isActiveTeam: boolean;
   isClueGiver: boolean;
   isGuesser: boolean;
@@ -264,6 +267,10 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
       return;
     }
 
+    if (game.isPaused) {
+      return;
+    }
+
     function updateTimer() {
       const endsAt = new Date(game?.turnEndsAt as string).getTime();
       const adjustedNow = Date.now() + serverTimeOffset;
@@ -285,7 +292,7 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
     return () => {
       window.clearInterval(interval);
     };
-  }, [game?.phase, game?.turnEndsAt, serverTimeOffset]);
+  }, [game?.phase, game?.turnEndsAt, game?.isPaused, serverTimeOffset]);
 
   useEffect(() => {
     setInputError(null);
@@ -321,6 +328,13 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
 
     return room.players.filter((player) => player.team === game.activeTeam);
   }, [game, room]);
+
+  const disconnectedPlayers = useMemo(
+    () => room?.players.filter((player) => !player.isConnected) ?? [],
+    [room],
+  );
+
+  const isPaused = game?.isPaused === true;
 
   const clueGiver = useMemo(() => {
     if (!room || !activeRoles) {
@@ -608,6 +622,9 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
     hasLoaded,
     timeLeft,
     currentWord,
+
+    isPaused,
+    disconnectedPlayers,
 
     isActiveTeam,
     isClueGiver,

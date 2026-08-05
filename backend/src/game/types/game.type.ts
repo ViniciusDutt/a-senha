@@ -21,6 +21,7 @@ export type Game = {
 
   activeTeam: Team;
   phase: GamePhase;
+  isPaused: boolean;
 
   roles: {
     team1: TeamRoles;
@@ -45,6 +46,7 @@ export type Game = {
 
   turnStartedAt: Date | null;
   turnEndsAt: Date | null;
+  pausedRemainingTurnMs: number | null;
 
   createdAt: Date;
 };
