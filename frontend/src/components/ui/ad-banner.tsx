@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { cn } from "@/lib/utils";
 
 type AdSenseCommand = Record<string, unknown>;
@@ -25,26 +25,6 @@ function AdBanner({
   className,
 }: AdBannerProps) {
   const adRef = useRef<HTMLModElement>(null);
-
-  useEffect(() => {
-    const adElement = adRef.current;
-
-    if (!adElement) {
-      return;
-    }
-
-    if (adElement.hasAttribute("data-adsbygoogle-status")) {
-      return;
-    }
-
-    window.adsbygoogle = window.adsbygoogle ?? [];
-
-    try {
-      window.adsbygoogle.push({});
-    } catch (error) {
-      console.error("Erro ao inicializar AdSense:", error);
-    }
-  }, []);
 
   return (
     <ins
