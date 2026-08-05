@@ -25,19 +25,19 @@ export function GameHeader({ game, players, timeLeft }: GameHeaderProps) {
 
   const getRoleIcon = (player: Player) => {
     if (player.team !== game.activeTeam) {
-      return <Eye size={16} />;
+      return <Eye className="size-4 md:size-6" />;
     }
 
     const roles = player.team === "team1" ? game.roles.team1 : game.roles.team2;
 
     if (player.id === roles.clueGiverId) {
-      return <Lightbulb size={16} />;
+      return <Lightbulb className="size-4 md:size-6" />;
     }
     if (player.id === roles.guesserId) {
-      return <MessageCircleQuestionMark size={16} />;
+      return <MessageCircleQuestionMark className="size-4 md:size-6" />;
     }
 
-    return <Eye size={16} />;
+    return <Eye className="size-4 md:size-6" />;
   };
 
   const renderPlayer = (player: Player) => {
@@ -47,7 +47,7 @@ export function GameHeader({ game, players, timeLeft }: GameHeaderProps) {
       <div key={player.id} className="flex flex-col items-center gap-1">
         <div
           className={cn(
-            "relative size-6 rounded-sm overflow-clip border-2",
+            "relative size-6 md:size-12 rounded-sm overflow-clip border-2",
             player.team === "team1" ? "border-chart-2" : "border-primary",
           )}
         >
@@ -56,7 +56,7 @@ export function GameHeader({ game, players, timeLeft }: GameHeaderProps) {
             alt={`Avatar de ${player.name}`}
             title={`Avatar de ${player.name}`}
             fill
-            sizes="40px"
+            sizes="(max-width: 1024px) 40px, 80px"
             className={cn(
               "object-cover",
               !player.isConnected && "brightness-30",
