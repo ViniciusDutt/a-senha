@@ -206,11 +206,12 @@ export function useRoomLobby(roomId: string): UseRoomLobbyResult {
     if (storedPlayerId) {
       setHasJoined(true);
 
+      socket.on("connect", reconnectPlayer);
+
       if (socket.connected) {
         reconnectPlayer();
       } else {
         socket.connect();
-        socket.once("connect", reconnectPlayer);
       }
     }
 

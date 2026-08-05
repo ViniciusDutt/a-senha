@@ -226,11 +226,12 @@ export function useGameRoom(roomId: string): UseGameRoomResult {
 
     socket.on("room:returned-to-lobby", handleReturnedToLobby);
 
+    socket.on("connect", reconnectGame);
+
     if (socket.connected) {
       reconnectGame();
     } else {
       socket.connect();
-      socket.once("connect", reconnectGame);
     }
 
     return () => {
